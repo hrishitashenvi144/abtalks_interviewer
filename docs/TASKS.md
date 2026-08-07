@@ -1,7 +1,7 @@
 # Project Tasks & Milestones
 
-- [ ] M0 Scaffolding
-- [ ] M1 Curriculum/Candidate data loading
+- [x] M0 Scaffolding
+- [x] M1 Curriculum/Candidate data loading
 - [ ] M2 Interview engine core
 - [ ] M3 API contract implementation
 - [ ] M4 Frontend chat UI
