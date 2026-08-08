@@ -22,6 +22,9 @@ class ClaudeClient(LLMClient):
                 "content": msg.get("content", "")
             })
 
+        if not formatted_messages:
+            formatted_messages = [{"role": "user", "content": "Hello"}]
+
         response = self.client.messages.create(
             model=self.model_name,
             max_tokens=1024,

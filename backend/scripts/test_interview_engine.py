@@ -68,6 +68,8 @@ def main():
 
         print()
         turn_num += 1
+        import time
+        time.sleep(2)
         result = process_turn(session_id=session_id, candidate=None, message=user_input)
 
 

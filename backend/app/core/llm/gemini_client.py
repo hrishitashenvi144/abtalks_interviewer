@@ -1,4 +1,5 @@
 import os
+import time
 import google.generativeai as genai
 from app.core.llm.base import LLMClient
 
@@ -26,5 +27,17 @@ class GeminiClient(LLMClient):
                 "parts": [msg.get("content", "")]
             })
 
-        response = model.generate_content(formatted_contents)
-        return response.text if response.text else ""
+        if not formatted_contents:
+            formatted_contents = [{"role": "user", "parts": ["Hello"]}]
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = model.generate_content(formatted_contents)
+                return response.text if response.text else ""
+            except Exception as e:
+                err_str = str(e)
+                if ("429" in err_str or "ResourceExhausted" in err_str or "Quota" in err_str or "504" in err_str or "DeadlineExceeded" in err_str or "ServiceUnavailable" in err_str) and attempt < max_retries - 1:
+                    time.sleep(5 * (attempt + 1))
+                else:
+                    raise e
