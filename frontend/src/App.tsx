@@ -235,7 +235,7 @@ export default function App() {
           <div className="profile">
             <div className="avatar">H</div>
             <div className="profile-meta">
-              <strong>Harishita</strong>
+              <strong>Hrishita</strong>
               <span className="profile-role">Product</span>
             </div>
             <button className="button button--ghost">Upgrade</button>

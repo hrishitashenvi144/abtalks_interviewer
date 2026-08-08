@@ -1,29 +1,28 @@
-# Prompts
-
-
 # Prompts Log
 
-Actual prompts given to Antigravity, in order. Copied verbatim for traceability.
+Actual prompts given to implementation agents, in chronological order.
+Preserved verbatim for traceability. Cross-referenced with docs/AI_LOG.md
+session numbers.
 
 ---
 
-## Milestone 0 — Scaffolding
+## Session 1 — Milestone 0: Scaffolding
+**Agent:** Google Antigravity
 
 Set up the initial project skeleton for "The Interview Agent" hackathon submission.
-["""Set up the initial project skeleton for "The Interview Agent" hackathon submission.
 
 Create this exact folder structure:
 /backend
   /app
     /api          (route handlers only)
     /core         (interview engine, prompt builders, session logic)
-    /core/llm     (provider abstraction — see below)
+    /core/llm     (provider abstraction)
     /models       (pydantic schemas)
     /data         (curriculum.json, candidates.json will go here later)
   main.py
   requirements.txt
 /frontend
-  (Vite + React app, plain JS or TS — your choice, but be consistent)
+  (Vite + React app)
 /docs
   AI_LOG.md
   PROMPTS.md
@@ -33,187 +32,546 @@ README.md
 .gitignore
 .env.example
 
-LLM PROVIDER ABSTRACTION (important):
+LLM PROVIDER ABSTRACTION:
 Create /backend/app/core/llm/base.py defining an abstract interface:
   class LLMClient(ABC):
       def generate(self, messages: list[dict], system_prompt: str) -> str
 
-Create /backend/app/core/llm/gemini_client.py implementing LLMClient using the
-google-generativeai SDK (model: gemini-2.5-flash).
+Create gemini_client.py (google-generativeai SDK, gemini-2.5-flash) and
+claude_client.py (anthropic SDK, claude-sonnet-4-6) as two implementations
+of the same interface. Create factory.py with get_llm_client() reading
+LLM_PROVIDER from environment, defaulting to "gemini".
 
-Create /backend/app/core/llm/claude_client.py implementing LLMClient using the
-anthropic SDK (model: claude-sonnet-4-6), as a second implementation of the
-same interface. Do not wire this one up as default — just implement it.
+main.py boots FastAPI with a single GET /health endpoint. No interview
+routes yet. DECISIONS.md logs rationale for FastAPI + in-memory state +
+no vector DB, and for the LLM provider abstraction. TASKS.md lists all
+milestones M0-M7 as unchecked.
 
-Create /backend/app/core/llm/factory.py with a function get_llm_client() that
-reads LLM_PROVIDER from environment (via python-dotenv) and returns the
-correct client instance ("gemini" -> GeminiClient, "claude" -> ClaudeClient).
-Default to "gemini" if unset.
-
-Do NOT call generate() anywhere yet, and do NOT build any interview logic.
-This milestone only proves the abstraction compiles and factory returns the
-right instance — add one throwaway test script at /backend/scripts/test_llm.py
-that instantiates get_llm_client() and calls generate() with a trivial "say
-hello" prompt, just to confirm both providers work when keys are present.
-Do not commit this script's output/logs, just the script.
-
-Requirements:
-- Backend deps in requirements.txt: fastapi, uvicorn, pydantic, python-dotenv,
-  google-generativeai, anthropic
-- Frontend: Vite + React, no extra UI framework yet (Tailwind comes later)
-- .env.example must include:
-    LLM_PROVIDER=gemini
-    GEMINI_API_KEY=
-    ANTHROPIC_API_KEY=
-- .gitignore must exclude .env, node_modules, __pycache__, venv, *.pyc
-- main.py boots FastAPI with a single GET /health endpoint returning
-  {"status": "ok"}. No interview routes yet.
-- README.md: placeholder title + "Setup instructions coming soon"
-- DECISIONS.md: log one entry explaining:
-    (a) why FastAPI + in-memory state + no vector DB
-    (b) why a provider-abstracted LLM layer with Gemini as default dev
-        provider and Claude as swappable option for final demo
-  Keep it to 5-6 bullet points total.
-- TASKS.md: markdown checklist with unchecked items: M0 Scaffolding,
-  M1 Curriculum/Candidate data loading, M2 Interview engine core,
-  M3 API contract implementation, M4 Frontend chat UI,
-  M5 Feedback report generation, M6 Polish + deploy, M7 Docs + demo prep.
-- AI_LOG.md and PROMPTS.md: create with just a header each, filled in later.
-
-Do NOT implement any interview logic, prompt engineering, or frontend
-components beyond a blank Vite starter in this milestone.
-
-Commit using Conventional Commits, one commit per logical unit:
-1. chore: initialize backend structure
-2. feat: add LLM provider abstraction (gemini + claude)
-3. chore: initialize frontend structure
-4. docs: add initial project documentation files
-
-Stop after these commits. Report back exactly what was created, and confirm
-whether test_llm.py runs successfully if API keys are available. Do not
-proceed to further milestones without my review.
-
-
-
-"""]
+Commit using Conventional Commits, one commit per logical unit. Stop after
+scaffolding — do not implement interview logic yet.
 
 ---
 
-## Milestone 1 — Curriculum Data Loader & Topic Selection Algorithm
+## Session 2 — Milestone 1: Curriculum Data & Topic Selection
+**Agent:** Google Antigravity
 
-## Milestone 4 — Feedback generation and evaluation prompt
-Updated the feedback prompt to mandate structured JSON output with explicit assessment dimensions and curriculum guidance:
+Implement the data layer and topic-selection algorithm for the Interview
+Agent backend. Do NOT touch API routes or LLM calls yet.
 
-## Milestone 5 — UI product pass
-Built a coherent interview platform shell with dashboard, navigation, history, and results visualization.
-Added conversation UI polish, transcript review support, and local history persistence while preserving the existing backend interview architecture.
+1. curriculum_loader.py: load_curriculum(), get_day(day_number), 
+   get_module_for_day(day_number)
 
-"""
-You are an Expert Technical Interview Assessor summarizing a completed technical interview.
+2. topic_selector.py implementing this scoring algorithm:
+   - skipped == true → score += 10
+   - passed == false → score += 10
+   - passed == true AND attempts >= 4 → score += 6
+   - passed == true AND attempts in [2,3] → score += 2
+   - passed == true AND attempts == 1 → score += 0
 
-CANDIDATE PROFILE:
-- Name: {name}
-- Role: {role}
+   select_interview_topics(candidate, min_days=5):
+   - Sort by score descending
+   - Always include Day 31 (Capstone) placed last, as closing question
+   - Enforce module diversity: max 2 days per module
+   - Each result includes: day, title, score, reason (human-readable
+     explanation, e.g. "Skipped — testing self-study depth")
 
-TOPICS COVERED IN INTERVIEW:
-{covered topic list}
+3. test_topic_selection.py: run against 3-4 candidate profiles with
+   different signal patterns, print results.
 
-FULL INTERVIEW TRANSCRIPT:
-{history_str}
+4. DECISIONS.md entry explaining why topic selection is deterministic,
+   not LLM-driven.
 
-FEEDBACK GENERATION INSTRUCTIONS:
-1. Produce an objective, thorough technical assessment based strictly on the transcript above.
-2. "summary": Provide a concise 2-3 sentence overall evaluation of the candidate's technical demonstration, depth, and communication skills.
-3. "technicalUnderstanding": Provide a 1-2 sentence statement describing the candidate's grasp of core technical concepts and domain knowledge.
-4. "reasoning": Provide a 1-2 sentence statement describing the candidate's problem-solving clarity, structure, and analytical strength.
-5. "communication": Provide a 1-2 sentence statement describing the candidate's ability to explain ideas clearly and confidently.
-6. "depth": Provide a 1-2 sentence statement describing how deeply the candidate engaged with technical details versus staying high level.
-7. "curriculumRevisit": Provide 3-5 concrete curriculum topics, days, or concept areas the candidate should revisit based on the interview.
-8. "strengths": Provide 3-5 specific, actionable bullet points highlighting areas where the candidate demonstrated solid technical knowledge or strong problem-solving. Refer to specific topics discussed.
-9. "gaps": Provide 3-5 specific, actionable bullet points detailing technical deficiencies, superficial answers, or missed concepts observed during the interview. Refer to specific topics discussed.
-10. "next": Provide 3-5 concrete, practical recommendations for what the candidate should study or practice next to improve.
+Commit using Conventional Commits. Run test_topic_selection.py and report
+output. Stop — do not proceed to session state or API work without review.
 
-CRITICAL OUTPUT REQUIREMENT:
-Respond ONLY with a single JSON object. No markdown code block formatting (no ```json fences), no preamble, no trailing text.
-Exact JSON schema matching FeedbackModel:
-{
-  "summary": "<2-3 sentence overview>",
-  "overallScore": <integer 1-100>,
-  "technicalUnderstanding": "<summary of technical understanding>",
-  "reasoning": "<summary of reasoning>",
-  "communication": "<summary of communication>",
-  "depth": "<summary of depth>",
-  "curriculumRevisit": ["<topic 1>", "<topic 2>", "<topic 3>"],
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "gaps": ["<gap 1>", "<gap 2>", "<gap 3>"],
-  "next": ["<recommendation 1>", "<recommendation 2>", "<recommendation 3>"]
-}
-"""
+---
 
-## Milestone 1 — Curriculum Data Loader & Topic Selection Algorithm
+## Session 3 — Milestone 2: Interview Engine Core
+**Agent:** Google Antigravity
 
-Implement the data layer and topic-selection algorithm for the Interview Agent backend.
-["""Implement the data layer and topic-selection algorithm for the Interview Agent
-backend. Do NOT touch the API routes or LLM calls yet — this milestone is pure
-data logic, independently testable.
+Implement the Interview Engine core. Do NOT build API routes or touch
+main.py — that is a later milestone.
 
-1. Copy curriculum.json and candidates.json (already provided by the user —
-   ask them for the file paths if not present in /backend/app/data/) into
-   /backend/app/data/.
+1. models/schemas.py: FeedbackModel, InterviewTurnResult, LLMTurnOutput
+   (internal, for parsing LLM JSON responses: reply, day_focus,
+   is_followup, ready_to_conclude)
 
-2. Create /backend/app/core/curriculum_loader.py:
-   - load_curriculum() -> loads and caches curriculum.json
-   - get_day(day_number: int) -> dict | None — returns the full day object
-     (title, type, tools, objectives)
-   - get_module_for_day(day_number: int) -> dict | None — returns module info
+2. core/session_store.py: in-memory dict keyed by sessionId. Session
+   shape: candidate, topic_queue, topic_index, questions_asked,
+   days_covered (set), followups_on_current, conversation_history, phase.
+   Functions: create_session, get_session, update_session.
 
-3. Create /backend/app/core/topic_selector.py implementing this scoring
-   algorithm:
+3. core/prompt_builder.py:
+   a) build_question_prompt(session): includes candidate info, current
+      topic (day title/objectives/tools + reason string), instructs
+      LLM to ask one question at a time conversationally, decide
+      is_followup based on whether previous answer was shallow/incorrect
+      vs solid, respond ONLY with valid JSON matching the schema.
+   b) build_feedback_prompt(session): includes full conversation history,
+      days covered, instructs LLM to respond ONLY with FeedbackModel JSON
+      shape, summary 2-3 sentences, strengths/gaps/next each 3-5 concise
+      actionable points referencing actual topics discussed.
 
-   For each mission in candidate.missions, compute a priority score:
-     - skipped == true          -> score += 10
-     - passed == false          -> score += 10
-     - passed == true AND attempts >= 4  -> score += 6
-     - passed == true AND attempts in [2,3] -> score += 2
-     - passed == true AND attempts == 1 -> score += 0 (baseline only)
+4. core/interview_engine.py: process_turn(session_id, candidate, message)
+   - First call: run select_interview_topics(), create session, call LLM
+     for first topic, return InterviewTurnResult(done=False)
+   - Subsequent calls: append message, call LLM, parse JSON (retry once
+     on failure, then fallback to raw text)
+   - Update counters: is_followup + followups_on_current < 2 → increment
+     followups, don't advance topic; else advance topic_index, add
+     day_focus to days_covered, reset followups_on_current
+   - should_end = (questions_asked >= 8 AND days_covered >= 4 AND
+     (topic_index >= len(topic_queue) OR ready_to_conclude)) OR
+     questions_asked >= 14 (hard safety cap)
+   - If should_end: call build_feedback_prompt(), parse into FeedbackModel
+     (retry-once-then-fallback, never crash), return done=True + feedback
 
-   Function: select_interview_topics(candidate: dict, min_days: int = 5) -> list[dict]
-   - Compute scores for all missions.
-   - Sort descending by score.
-   - Always include day 31 (Capstone) if present in candidate's missions,
-     regardless of score, placed LAST in the returned order (used as closing
-     question).
-   - Select top-scoring days until min_days is reached, but enforce diversity:
-     do not pick more than 2 days from the same curriculum module (use
-     get_module_for_day to check). Skip lower-scored candidates from an
-     over-represented module in favor of the next highest-scored day from a
-     different module.
-   - Each returned dict should include: day, title, score, reason (a short
-     human-readable string explaining WHY this day was selected, e.g.
-     "Skipped — testing self-study depth" or "Struggled (4 attempts) —
-     verifying understanding" or "Capstone — synthesis question"). This
-     `reason` field will later be used to justify the agent's topic choices,
-     which is a demo/judging feature — DO NOT skip it.
+5. scripts/test_interview_engine.py: interactive console script — pick a
+   candidate, loop process_turn() with input() for simulated answers
+   until done=True, print final feedback JSON.
 
-4. Create /backend/scripts/test_topic_selection.py — a standalone script that
-   loads candidates.json, runs select_interview_topics() on 3-4 different
-   candidate profiles (pick ones with different signal patterns — e.g. one
-   with many skips, one with high first-try rate, one with many retries), and
-   prints the selected topics with their reasons. This is for manual
-   verification only, do not commit test output/logs.
+Commit using Conventional Commits. Run test_interview_engine.py
+interactively, paste full transcript including feedback JSON. Stop —
+do not build API routes or frontend without review.
 
-5. Update DECISIONS.md with a short entry explaining the scoring algorithm
-   and why deterministic topic selection (not LLM-driven) was chosen for this
-   part of the system — 3-4 bullets.
+---
 
-Do not implement session state, the LLM client wiring, or API routes in this
-milestone. Do not modify main.py.
+## Session 4 — Groq Fallback Provider
+**Context:** Gemini free tier hit a 20 requests/day limit mid-testing
+(ResourceExhausted 429), insufficient for a full interview session
+(~9-15 calls) plus iteration. Implemented directly (not via an agent)
+in a Claude sandbox with bash/git access, since Antigravity's own quota
+was separately exhausted around this time.
 
-Commit using Conventional Commits:
-1. feat: add curriculum data loader
-2. feat: add deterministic topic selection algorithm
-3. docs: document topic selection rationale in DECISIONS.md
+Add Groq as a new LLMClient implementation:
+- groq_client.py implementing the existing LLMClient interface
+  (generate(messages, system_prompt) -> str), using Llama 3.3 70B via
+  the Groq SDK, reading GROQ_API_KEY from environment.
+- Update factory.py to support LLM_PROVIDER=groq.
+- Update llm/__init__.py exports.
+- Add groq to requirements.txt.
 
-After committing, run test_topic_selection.py and paste its output in your
-report back to me. Stop here — do not proceed to session state or API work
-without my review of the topic selection output."""]
+Verified imports resolve cleanly. Packaged as a tarball for manual
+application since the sandbox had no push access to the user's repo.
+
+---
+
+## Session 5 — Milestone 3 + 4: API Layer & Frontend (Initial Build)
+**Context:** Built directly in a Claude sandbox (cloned the repo,
+implemented, packaged as a tarball) after Antigravity's quota was
+exhausted. This build was later found to be incompletely applied/
+committed, leading to confusion resolved in Session 6-7 below.
+
+Implement the API layer and frontend for the Interview Agent, wiring
+both to the already-built interview_engine.py. Do NOT modify
+interview_engine.py, prompt_builder.py, session_store.py, or
+topic_selector.py.
+
+BACKEND:
+1. POST /api/interview — routes to process_turn() for both session-start
+   (candidate present) and continuation (message present) calls. HTTP 400
+   on unknown sessionId for message-only calls.
+2. GET /api/candidates — returns candidate list from candidates.json
+   (demo helper, not part of required spec).
+3. Register both routers in main.py, add CORSMiddleware(allow_origins=["*"]).
+
+FRONTEND:
+TailwindCSS via CDN. Single-page app, state machine: "select" ->
+"interview" -> "feedback". VITE_API_BASE_URL env var.
+
+1. CandidateSelect: GET /api/candidates, render as cards (name, role,
+   stat line). Click generates sessionId via crypto.randomUUID(), POSTs
+   to start interview.
+2. ChatInterview: chat bubbles, auto-scroll, typing indicator, POST on
+   send, transitions to feedback screen when done=true.
+3. FeedbackReport: sectioned card-based report (Summary, Strengths, Gaps,
+   Next Steps), not a JSON dump. "Start New Interview" button.
+
+Mobile-friendly, no horizontal scroll. Commit using Conventional Commits.
+
+---
+
+## Session 5b — VSCode Agent Takeover: Autonomous Build Mode
+**Agent:** VSCode-based coding agent (Cline)
+
+STOP AUDITING. We have already verified the backend and API manually.
+From this point forward, switch into AUTONOMOUS BUILD MODE.
+
+[Full instruction: reuse existing architecture (FastAPI backend, React/
+Vite frontend, candidate/curriculum data, topic selection, interview
+engine, LLM abstraction, session memory, prompt builders, existing APIs,
+basic UI components) — do not rebuild.
+
+Priority order: 1) make complete interview flow work end-to-end,
+2) polished professional frontend, 3) genuinely adaptive interviewer,
+4) intelligent answer-referencing follow-ups, 5) impressive feedback
+report, 6) graceful loading/error states, 7) demo reliability, 8) final
+polish.
+
+Core experience specified: candidate selects profile → personalized
+interview starts → AI evaluates answers internally → chooses next
+question/follow-up → difficulty adapts → context maintained → covers
+multiple curriculum days → structured feedback.
+
+UI direction: premium, modern, clean dark/light system, strong
+typography, generous spacing, subtle animations, professional dashboard
+feel, clear progress indicators.
+
+Features specified for candidate selection, interview screen, and
+feedback screen (score, technical understanding, reasoning,
+communication, depth, strengths, weaknesses, recommendations, curriculum
+areas to revisit, summary).
+
+Engineering rules: reuse existing architecture, avoid unnecessary deps,
+avoid rewriting working modules, keep TypeScript strict, don't introduce
+databases/state-management libraries, don't change LLM providers, don't
+create fake data to hide backend failures.
+
+Required: maintain AI_LOG.md and PROMPTS.md throughout, Conventional
+Commits per milestone, don't push unless instructed, don't repeatedly
+kill/restart servers or spend most of the task narrating diagnostics —
+inspect then build, only stop for major architectural decisions or
+missing credentials.]
+
+---
+
+## Session 5c — Adaptive Interview Evaluation Flow
+**Agent:** VSCode-based coding agent (Cline)
+
+The current interview flow is functional, but after testing it manually
+I see a major product problem: it feels like a generic chatbot asking an
+unlimited sequence of technically related questions. We need to
+transform it into a REAL adaptive AI interview product.
+
+[Full instruction: do not rebuild, modify existing engine and UI.
+
+Core design: ~6-8 questions but adaptive, not a fixed rule — terminate
+when enough evidence collected across competencies, or ask 1-2 extra
+targeted questions if evidence is missing.
+
+Question strategy: cover different competencies rather than repeating
+one topic. Guideline structure: foundation → applied technical →
+scenario/problem-solving → adaptive follow-up → another
+competency/domain → higher difficulty → targeted weakness probe →
+optional synthesis question. Not rigid — AI decides based on
+demonstrated ability.
+
+Adaptive behavior: after every answer, internally assess correctness,
+depth, reasoning, confidence, communication, misconceptions, missing
+knowledge, competency evidence. Decide: increase difficulty / targeted
+follow-up / move to another competency / probe a weakness / conclude.
+
+Follow-ups must be answer-dependent — explicit example given contrasting
+a generic follow-up vs one referencing the candidate's specific prior
+answer (Prometheus/high-cardinality labels example).
+
+Competency tracking: internal evidence state per session (e.g.
+"Technical Fundamentals: strong, System Design: weak"), prioritize weak/
+insufficient-evidence areas. Don't expose chain-of-thought — store only
+concise structured assessment data.
+
+Termination: when competencies have sufficient evidence AND ~6-8
+questions answered AND no critical unanswered areas remain.
+
+Feedback report: overall score, competency scores, strengths, weaknesses,
+evidence-backed observations with specific examples, recommended topics,
+performance summary, suggested next steps — must be grounded in actual
+answers, not invented.
+
+Transcript: feedback page should show Question → Answer → Competency
+assessed → Concise evaluation.
+
+Engineering constraints: reuse existing interview engine, session store,
+prompt builders, LLM abstraction, candidate/curriculum data, existing
+APIs. No database, no unnecessary dependencies, no fake interview data.
+
+AI_LOG.md and PROMPTS.md updates required. Conventional Commit:
+"feat: build adaptive interview evaluation flow". Don't push unless
+instructed. Don't spend majority of task on diagnostics — build the
+feature, only stop for genuine blockers.]
+
+---
+
+## Session 5d — Full Product UI/UX Pass
+**Agent:** VSCode-based coding agent (Cline)
+
+Now perform a FULL PRODUCT UI/UX PASS on the existing application.
+
+[Full instruction: current app feels like a basic demo (just
+CandidateSelect, ChatInterview, FeedbackReport) without a coherent
+product shell, navigation, dashboard, or strong visual identity.
+
+Do NOT rebuild backend architecture, replace interview engine, throw
+away working components, introduce a database for UI, or add
+unnecessary dependencies.
+
+Product structure specified: Landing/Dashboard, Interview/Practice,
+Candidate/Role Selection, Active Interview, Interview Results, Interview
+History, Profile/Settings.
+
+Navigation: persistent responsive navbar/sidebar with product branding,
+Dashboard, Practice/New Interview, History, Performance/Results,
+Profile/settings. No dead links.
+
+Dashboard: heading, "Start Interview" CTA, recent interview, latest
+score, competency overview, interview count, recommendations, quick
+action.
+
+Candidate selection: upgraded cards showing name, role, experience,
+relevant skills, interview focus.
+
+Active interview: candidate/role context, current question, question
+number, progress, current competency/topic, conversation history,
+answer input, loading state, follow-up indication, error state,
+duplicate-submission prevention, clear completion state. No exposed
+chain-of-thought.
+
+Results/Feedback: overall score, competency breakdown, strengths,
+weaknesses, evidence-backed observations, recommended topics, actionable
+suggestions, summary, transcript/evidence. Tasteful visualizations
+(progress bars/score cards/radar chart) only if they genuinely help.
+
+History: previous sessions with date/time, role/candidate, score,
+status, competency result. No fake persistent data if true persistence
+doesn't exist — clear empty state instead.
+
+Design system: premium, modern, professional, AI-native, minimal but not
+empty, strong typography/spacing/hierarchy, subtle motion, polished
+cards/buttons/inputs, responsive. Explicitly avoid generic "AI startup"
+decoration — no random gradients, excessive glassmorphism, floating
+blobs, meaningless animations.
+
+Responsiveness: desktop/laptop/tablet/mobile, no horizontal overflow.
+
+Every major screen needs loading/empty/error/success states — no blank
+white screens on failure.
+
+Technical constraints: centralized API layer, no duplicated API logic in
+components, no unnecessary state-management library, no backend changes
+just for UI convenience, no fake data.
+
+AI_LOG.md/PROMPTS.md updates required. Conventional Commit: "feat: build
+complete interview platform UI". Don't push automatically. Don't
+narrate terminal commands — implement, run, fix, finish, then report
+screens created, navigation structure, UX improvements, files changed,
+verification, commit hash.]
+
+---
+
+## Session 5e — Production-Quality Platform Pass
+**Agent:** VSCode-based coding agent (Cline)
+
+We are no longer treating this as a basic hackathon demo. The goal is to
+make the application feel like a polished, production-quality AI
+interview platform.
+
+[Full instruction, expanding on 5d with more specificity: do not rebuild
+from scratch, replace architecture, add unnecessary dependencies —
+preserve all working functionality, work incrementally, verify each
+change.
+
+Product standard: comparable to a real SaaS product, not a chatbot
+prototype — coherent identity, navigation, information architecture,
+visual hierarchy, responsive design, proper states, polished
+interactions.
+
+Information architecture: Dashboard, New Interview, Interview Room,
+Results, History, Profile/Settings.
+
+New Interview screen: candidate/profile, target role, relevant skills,
+interview focus, difficulty, estimated duration, competencies assessed —
+user should understand exactly what they're about to do.
+
+Interview Room (renamed/reframed from "chat"): explicitly NOT a generic
+ChatGPT-style conversation — dedicated interview environment with
+interviewer/question area and candidate answer area as the visual focus,
+avoid excessive chat bubbles, should feel like an actual professional
+interview.
+
+Adaptive interview: same ~6-8 question guidance, competency evidence
+tracking, answer-grounded follow-ups, eventual termination, repeated
+from 5c with reinforcement.
+
+Results: Overall Score, Competency Breakdown (Technical Knowledge,
+Problem Solving, System Thinking, Communication, role-specific), then
+Strengths/Weaknesses/Evidence/Recommendations/Summary/Transcript — all
+grounded in actual answers, example strength/gap/recommendation format
+given (Prometheus/cardinality example again).
+
+History: role, date, score, duration, status, competency summary per
+entry, click to open results, no fabricated historical data if
+persistence isn't implemented — polished empty state instead.
+
+Visual design: ONE coherent design system — strong typography,
+consistent spacing/cards/hierarchy, restrained palette, consistent
+buttons/inputs, subtle borders/shadows, polished hover/focus states,
+tasteful animation. Explicit avoid-list: random gradients, excessive
+glassmorphism, floating blobs, meaningless animations, giant empty
+spaces, generic AI-generated dashboard aesthetics, inconsistent card
+styles, oversized decorative headings.
+
+Responsive: desktop/laptop/tablet/mobile, no horizontal overflow.
+
+Every operation needs a loading/error/empty state (loading candidates,
+starting interview, generating next question, submitting answer,
+generating feedback, no history, API failure). React error boundary
+required — never a blank white page after a runtime error.
+
+Technical quality: centralized API layer, reusable components, existing
+backend/LLM/interview-engine architecture preserved, no duplicated API
+requests in components, no unnecessary state-management framework, no
+fake backend data to populate the UI.
+
+Hackathon presentation: demo flow specified as Dashboard → New Interview
+→ Select candidate → Interview → Adaptive follow-up → Completion →
+Results → Evidence-based recommendations. A judge should understand the
+product within the first 20 seconds.
+
+AI_LOG.md/PROMPTS.md maintenance required per milestone. Conventional
+Commits, not dozens of trivial ones. Don't push automatically.
+
+Execution: don't narrate terminal commands, inspect → implement → run →
+test complete flow → fix runtime issues → report. Explicitly must verify
+the full journey (Dashboard → New Interview → Candidate → Start →
+Answer questions → Adaptive follow-up → End → Results), not just claim
+"the UI was implemented." Final result must feel like a REAL PRODUCT.]
+
+---
+
+## Session 6 — Read-Only Codebase Audit
+**Agent:** VSCode-based coding agent (Cline)
+
+You are taking over an existing hackathon codebase. Do NOT rebuild the
+project, reset Git, delete files, rewrite working code, or make broad
+architectural changes.
+
+First, perform a READ-ONLY audit of the current repository.
+
+[Instructed to inspect: repo/folder structure, README.md, AI_LOG.md,
+PROMPTS.md, DECISIONS.md, TASKS.md, backend architecture, frontend
+architecture, API routes, interview engine, candidate/curriculum data,
+LLM providers and fallback logic, environment/configuration files,
+existing tests/scripts, frontend-to-backend integration, incomplete/
+broken functionality. Also `git log --oneline --decorate -15`.
+
+Do NOT modify anything during the audit. Report structure required:
+CURRENTLY WORKING, ALREADY IMPLEMENTED, BROKEN/INCOMPLETE, MISSING FROM
+PROBLEM STATEMENT, TECHNICAL RISKS, RECOMMENDED NEXT MILESTONE. No
+implementation, no commits, no destructive process-killing commands, no
+file modification.]
+
+---
+
+## Session 6b — Security/Environment Remediation
+**Agent:** VSCode-based coding agent (Cline)
+
+We have completed the read-only audit. Now perform ONLY the
+security/environment remediation described below. Do not modify
+interview logic, frontend behavior, API contracts, prompts, or
+architecture.
+
+CRITICAL: never print, expose, copy, or include any actual API key
+values in output, logs, commits, or documentation.
+
+[Instructed to: check `git ls-files backend/.env` and .gitignore without
+printing .env contents. If backend/.env is tracked: `git rm --cached`
+it, ensure .gitignore covers it, create/update .env.example with
+placeholder values only, no history rewrite/force-push, no commit yet.
+If not tracked: just ensure .gitignore coverage and .env.example is
+current. Also check other tracked files (README, source, docs) for
+leaked secrets — report only filename/variable name, never the value.
+Report git status, git diff --stat, and diff of .gitignore/.env.example
+only. No process-killing, no server restarts, no app code changes, no
+commit/push.]
+
+**Result confirmed:** backend/.env was NOT tracked by Git and was
+already protected by .gitignore.
+
+---
+
+## Session 6c — End-to-End Flow Verification & Stabilization
+**Agent:** VSCode-based coding agent (Cline)
+
+We have verified that backend/.env is NOT tracked by Git and is already
+protected by .gitignore. Do NOT modify the environment/security setup.
+
+Now move to the next milestone: verify and stabilize the existing
+end-to-end interview flow.
+
+[Instructed to test the full flow: GET /api/candidates → start interview
+→ first AI question → submit answer → next question/follow-up →
+maintain session context → multiple turns → completion → structured
+feedback → display feedback. Using existing API contracts, engine,
+session store, prompt builders, LLM abstraction, frontend.
+
+Constraints: don't change API contract unless objectively broken, no new
+dependencies unless necessary, don't replace LLM architecture or switch
+providers unless the configured one is unavailable, no broad process
+killing, no unrelated file changes, no fake/mock responses to fake a
+working demo, no commit yet.
+
+Run existing test scripts (test_topic_selection.py, test_llm.py,
+test_interview_engine.py) — for interactive scripts, inspect and test
+underlying functions directly rather than getting stuck on input().
+Verify HTTP endpoints. If something fails: identify root cause, make
+smallest possible fix, test it, explain exactly what changed. Verify
+frontend integration end-to-end including session ID consistency.
+
+Report structure: WORKING (exact parts tested), BROKEN (exact failures
++ root causes), CHANGED (files modified + why), NEXT (single
+highest-value next feature). Only commit after flow confirmed stable.]
+
+---
+
+## Session 7 — Bug Fix: Candidate List Response Shape
+**Agent:** VSCode-based coding agent (Cline)
+
+Fix ONLY the current frontend runtime error.
+
+Browser console shows:
+Uncaught TypeError: candidates.map is not a function
+at CandidateSelect (CandidateSelect.tsx:52)
+
+The backend GET /api/candidates was intentionally changed to return the
+raw candidate array instead of { "candidates": [...] }. Therefore the
+frontend API layer and/or CandidateSelect component still expects the
+old wrapped response shape.
+
+[Instructed to inspect frontend/src/lib/api.ts, CandidateSelect.tsx, and
+the current GET /api/candidates contract. Make the frontend correctly
+consume the array-shaped response. Do NOT change the backend or revert
+the response format, do NOT redesign the UI, do NOT touch the interview
+engine, no new dependencies. Fix the smallest number of files necessary.
+
+Then: build/run frontend to verify no TS/runtime errors, verify
+CandidateSelect renders the list, verify Start Interview still reaches
+the interview flow. Update AI_LOG.md. Conventional Commit: "fix: align
+frontend with candidates API response". Don't push. Report files
+changed, exact cause, fix, verification, commit hash.]
+
+---
+
+## Session 7b — Bug Fix: Interview Start 500 Error
+**Agent:** VSCode-based coding agent (Cline)
+
+We have a backend failure when starting an interview. DO NOT redesign
+anything. DO NOT modify the frontend. DO NOT modify the API contract.
+DO NOT make speculative changes.
+
+Browser Network evidence: POST /api/interview returning 500 Internal
+Server Error, with a valid request payload (sessionId + candidate
+object). Frontend confirmed successfully loading /api/candidates and
+successfully sending the interview request — so diagnose the backend.
+
+[Instructed to inspect interview.py, interview_engine.py, llm/factory.py,
+llm/*.py, schemas.py, .env configuration, requirements.txt. Reproduce
+the exact request and capture the ACTUAL Python exception/traceback
+before changing any code. Report required first: exact exception, exact
+file+line, why it occurs, smallest safe fix. Only then implement the
+minimal fix.
+
+After fixing: verify POST /api/interview succeeds, verify frontend can
+start an interview, no unrelated file changes, update AI_LOG.md,
+Conventional Commit: "fix: resolve interview start backend error". Don't
+push. No UI redesign, no Vite/WebSocket/Tailwind work, no unrelated
+diagnostics.]
