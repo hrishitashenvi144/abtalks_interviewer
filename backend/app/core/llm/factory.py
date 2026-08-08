@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from app.core.llm.base import LLMClient
 from app.core.llm.gemini_client import GeminiClient
 from app.core.llm.claude_client import ClaudeClient
+from app.core.llm.groq_client import GroqClient
 
 load_dotenv()
 
@@ -20,8 +21,10 @@ def get_llm_client(provider: str | None = None) -> LLMClient:
         return GeminiClient()
     elif selected_provider == "claude":
         return ClaudeClient()
+    elif selected_provider == "groq":
+        return GroqClient()
     else:
         raise ValueError(
             f"Unsupported LLM_PROVIDER: '{selected_provider}'. "
-            "Supported options are 'gemini' and 'claude'."
+            "Supported options are 'gemini', 'claude', and 'groq'."
         )
