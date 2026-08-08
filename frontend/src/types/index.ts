@@ -18,6 +18,12 @@ export interface CandidateMission {
 export interface Candidate {
   member: CandidateMember;
   missions: CandidateMission[];
+  signals?: {
+    commitDays: number;
+    missionsCompleted: number;
+    missionsFirstTry: number;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
@@ -31,12 +37,24 @@ export interface Feedback {
   strengths: string[];
   gaps: string[];
   next: string[];
+  overallScore?: number;
+  technicalUnderstanding?: string;
+  reasoning?: string;
+  communication?: string;
+  depth?: string;
+  curriculumRevisit?: string[];
 }
 
 export interface InterviewTurnResponse {
   reply: string;
   done: boolean;
   feedback?: Feedback;
+  dayFocus?: number;
+  topicTitle?: string;
+  isFollowup?: boolean;
+  questionNumber?: number;
+  topicPosition?: number;
+  topicTotal?: number;
 }
 
 export type Screen = "select" | "interview" | "feedback";

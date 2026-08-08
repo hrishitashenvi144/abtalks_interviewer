@@ -3,6 +3,7 @@ from app.core.llm import get_llm_client
 from app.core.prompt_builder import build_feedback_prompt, build_question_prompt
 from app.core.session_store import create_session, get_session, update_session
 from app.core.topic_selector import select_interview_topics
+from app.core.curriculum_loader import get_day
 from app.models.schemas import FeedbackModel, InterviewTurnResult, LLMTurnOutput
 
 
@@ -40,23 +41,39 @@ def _parse_llm_turn_output(client, history: list, system_prompt: str, raw_respon
             )
 
 
+def _normalize_feedback_keys(data: dict) -> dict:
+    """Normalize feedback keys from snake_case or alternate names to the expected camelCase schema."""
+    key_map = {
+        "overall_score": "overallScore",
+        "technical_understanding": "technicalUnderstanding",
+        "curriculum_revisit": "curriculumRevisit",
+    }
+    return {key_map.get(k, k): v for k, v in data.items()}
+
+
 def _parse_feedback_output(client, history: list, system_prompt: str, raw_response: str) -> FeedbackModel:
     """Attempts to parse raw_response into FeedbackModel. Retries once if parsing fails, then falls back."""
     try:
         data = json.loads(_clean_json_text(raw_response))
-        return FeedbackModel(**data)
+        return FeedbackModel(**_normalize_feedback_keys(data))
     except Exception:
         try:
             retry_prompt = system_prompt + "\n\nIMPORTANT: Respond ONLY with valid JSON matching FeedbackModel schema."
             retry_resp = client.generate(messages=history, system_prompt=retry_prompt)
             data = json.loads(_clean_json_text(retry_resp))
-            return FeedbackModel(**data)
+            return FeedbackModel(**_normalize_feedback_keys(data))
         except Exception:
             return FeedbackModel(
                 summary="Candidate completed the technical interview session across several curriculum topics.",
                 strengths=["Engaged actively during technical questioning", "Demonstrated familiarity with AI cohort concepts"],
                 gaps=["Some responses lacked full technical depth", "Review specific architecture & implementation details"],
                 next=["Practice hands-on coding for weak topics", "Review cohort curriculum objectives"],
+                overallScore=64,
+                technicalUnderstanding="The candidate showed basic command of the topic with room for deeper precision.",
+                reasoning="The candidate presented logical thoughts but could use more systematic reasoning steps.",
+                communication="The candidate communicated clearly, though some answers lacked concise structure.",
+                depth="The discussion was solid at a high level, but missed some lower-level technical details.",
+                curriculumRevisit=["Review key architecture and observability patterns", "Revisit the selected topic day objectives", "Refresh trade-off analysis in system design"],
             )
 
 
@@ -88,7 +105,17 @@ def process_turn(session_id: str, candidate: dict | None = None, message: str | 
         session["followups_on_current"] = 0
         update_session(session_id, session)
 
-        return InterviewTurnResult(reply=parsed.reply, done=False)
+        topic_title = get_day(parsed.day_focus).get("title") if get_day(parsed.day_focus) else None
+        return InterviewTurnResult(
+            reply=parsed.reply,
+            done=False,
+            dayFocus=parsed.day_focus,
+            topicTitle=topic_title,
+            isFollowup=parsed.is_followup,
+            questionNumber=session["questions_asked"],
+            topicPosition=1 if session["topic_queue"] else None,
+            topicTotal=len(session["topic_queue"]),
+        )
 
     # If session already finished
     if session.get("phase") == "done":
@@ -107,6 +134,9 @@ def process_turn(session_id: str, candidate: dict | None = None, message: str | 
     parsed = _parse_llm_turn_output(client, session["conversation_history"], prompt, raw_resp, fallback_day)
 
     followups = session.get("followups_on_current", 0)
+    current_topic_position = topic_idx + 1 if topic_queue else 0
+    topic_total = len(topic_queue)
+
     if parsed.is_followup and followups < 2:
         session["followups_on_current"] = followups + 1
         session["questions_asked"] = session.get("questions_asked", 0) + 1
@@ -136,9 +166,30 @@ def process_turn(session_id: str, candidate: dict | None = None, message: str | 
         session["phase"] = "done"
         update_session(session_id, session)
 
-        return InterviewTurnResult(reply=parsed.reply, done=True, feedback=feedback)
+        topic_title = get_day(parsed.day_focus).get("title") if get_day(parsed.day_focus) else None
+        return InterviewTurnResult(
+            reply=parsed.reply,
+            done=True,
+            feedback=feedback,
+            dayFocus=parsed.day_focus,
+            topicTitle=topic_title,
+            isFollowup=parsed.is_followup,
+            questionNumber=session.get("questions_asked", 0),
+            topicPosition=current_topic_position,
+            topicTotal=topic_total,
+        )
 
     session["conversation_history"].append({"role": "assistant", "content": parsed.reply})
     update_session(session_id, session)
 
-    return InterviewTurnResult(reply=parsed.reply, done=False)
+    topic_title = get_day(parsed.day_focus).get("title") if get_day(parsed.day_focus) else None
+    return InterviewTurnResult(
+        reply=parsed.reply,
+        done=False,
+        dayFocus=parsed.day_focus,
+        topicTitle=topic_title,
+        isFollowup=parsed.is_followup,
+        questionNumber=session.get("questions_asked", 0),
+        topicPosition=current_topic_position,
+        topicTotal=topic_total,
+    )

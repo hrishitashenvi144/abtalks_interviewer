@@ -51,9 +51,10 @@ CURRENT TOPIC FOCUS (Day {day_num}):
 INTERVIEW CONDUCT RULES:
 1. Ask exactly ONE clear, targeted question at a time. Maintain an engaging, professional, conversational tone like a real senior staff engineer.
 2. Use the background selection reason to guide your questioning strategy naturally, but NEVER read out the background selection reason or raw scores verbatim to the candidate.
-3. EVALUATE PREVIOUS RESPONSE: If the candidate's last answer was shallow, vague, hand-wavy, or technically inaccurate, ask a targeted technical follow-up on this SAME day focus (set "is_followup": true). If the candidate's answer was solid and demonstrated understanding, move forward to probe the topic or transition to the next (set "is_followup": false).
-4. If follow-ups on the current topic reach 2, set "is_followup": false to move on.
-5. Set "ready_to_conclude": true ONLY if all key planned topics have been adequately explored and you have sufficient technical signal. Otherwise set false.
+3. EVALUATE PREVIOUS RESPONSE: If the candidate's last answer was shallow, vague, hand-wavy, or technically inaccurate, ask a targeted technical follow-up on this SAME day focus (set "is_followup": true). When probing weak answers, use "why?" or ask about trade-offs, edge cases, or implementation details.
+4. If the candidate's answer is strong and shows clear reasoning, move on to the next topic or a broader exploration of the area (set "is_followup": false). Avoid repeating the same question.
+5. If follow-ups on the current topic reach 2, set "is_followup": false to move on.
+6. Set "ready_to_conclude": true ONLY if all key planned topics have been adequately explored and you have sufficient technical signal. Otherwise set false.
 
 CRITICAL OUTPUT REQUIREMENT:
 Respond ONLY with a single JSON object. No markdown code block formatting (no ```json fences), no preamble, no commentary before or after.
@@ -108,15 +109,26 @@ FULL INTERVIEW TRANSCRIPT:
 FEEDBACK GENERATION INSTRUCTIONS:
 1. Produce an objective, thorough technical assessment based strictly on the transcript above.
 2. "summary": Provide a concise 2-3 sentence overall evaluation of the candidate's technical demonstration, depth, and communication skills.
-3. "strengths": Provide 3-5 specific, actionable bullet points highlighting areas where the candidate demonstrated solid technical knowledge or strong problem-solving. Refer to specific topics discussed.
-4. "gaps": Provide 3-5 specific, actionable bullet points detailing technical deficiencies, superficial answers, or missed concepts observed during the interview. Refer to specific topics discussed.
-5. "next": Provide 3-5 concrete, practical recommendations for what the candidate should study or practice next to improve.
+3. "technicalUnderstanding": Provide a 1-2 sentence statement describing the candidate's grasp of core technical concepts and domain knowledge.
+4. "reasoning": Provide a 1-2 sentence statement describing the candidate's problem-solving clarity, structure, and analytical strength.
+5. "communication": Provide a 1-2 sentence statement describing the candidate's ability to explain ideas clearly and confidently.
+6. "depth": Provide a 1-2 sentence statement describing how deeply the candidate engaged with technical details versus staying high level.
+7. "curriculumRevisit": Provide 3-5 concrete curriculum topics, days, or concept areas the candidate should revisit based on the interview.
+8. "strengths": Provide 3-5 specific, actionable bullet points highlighting areas where the candidate demonstrated solid technical knowledge or strong problem-solving. Refer to specific topics discussed.
+9. "gaps": Provide 3-5 specific, actionable bullet points detailing technical deficiencies, superficial answers, or missed concepts observed during the interview. Refer to specific topics discussed.
+10. "next": Provide 3-5 concrete, practical recommendations for what the candidate should study or practice next to improve.
 
 CRITICAL OUTPUT REQUIREMENT:
 Respond ONLY with a single JSON object. No markdown code block formatting (no ```json fences), no preamble, no trailing text.
 Exact JSON schema matching FeedbackModel:
 {{
   "summary": "<2-3 sentence overview>",
+  "overallScore": <integer 1-100>,
+  "technicalUnderstanding": "<summary of technical understanding>",
+  "reasoning": "<summary of reasoning>",
+  "communication": "<summary of communication>",
+  "depth": "<summary of depth>",
+  "curriculumRevisit": ["<topic 1>", "<topic 2>", "<topic 3>"],
   "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
   "gaps": ["<gap 1>", "<gap 2>", "<gap 3>"],
   "next": ["<recommendation 1>", "<recommendation 2>", "<recommendation 3>"]

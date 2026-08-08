@@ -31,4 +31,16 @@ done — not aspirational or planned work.
           2. fb8b969 feat: add deterministic topic selection algorithm
           3. d729424 feat: add curriculum data loader
 
-- Status: complete, pushed to main
+- Status: complete, pushed
+
+## Session 4 — Milestone 4: Rich structured feedback and polished candidate UI
+- Extended feedback generation to include overall score, technical understanding,
+  reasoning, communication, depth, and curriculum areas to revisit.
+- Upgraded frontend feedback UI to show summary, category cards, strengths,
+  weaknesses, recommendations, and curriculum revisit guidance.
+- Improved candidate cards with explicit mission progress, first-try signals,
+  and commit-days visibility.
+- Verified frontend build success with `npm run build` and backend model changes
+  accepted by runtime type check.
+- Status: complete, ready for next demo polish work.
+ to main

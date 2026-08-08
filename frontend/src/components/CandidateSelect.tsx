@@ -9,9 +9,10 @@ interface Props {
 function computeStats(candidate: Candidate) {
   const missions = candidate.missions ?? [];
   const total = missions.length;
-  const completed = missions.filter((m) => m.passed).length;
-  const firstTry = missions.filter((m) => m.passed && m.attempts === 1).length;
-  return { total, completed, firstTry };
+  const completed = candidate.signals?.missionsCompleted ?? missions.filter((m) => m.passed).length;
+  const firstTry = candidate.signals?.missionsFirstTry ?? missions.filter((m) => m.passed && m.attempts === 1).length;
+  const commitDays = candidate.signals?.commitDays ?? 0;
+  return { total, completed, firstTry, commitDays };
 }
 
 export default function CandidateSelect({ onSelect }: Props) {
@@ -27,55 +28,42 @@ export default function CandidateSelect({ onSelect }: Props) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-bg text-ink px-5 py-10 sm:px-10">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-10">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber mb-3">
-            ABTalks AI Cohort — Interview Session
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-sans font-800 font-extrabold tracking-tight">
-            Select a candidate to interview
-          </h1>
-          <p className="text-muted mt-3 max-w-xl">
-            The agent reads each candidate's actual learning journey — completed
-            missions, skips, and retries — and builds a personalized interview
-            from it.
-          </p>
-        </div>
-
-        {loading && (
-          <div className="font-mono text-sm text-muted">Loading roster…</div>
-        )}
-
-        {error && (
-          <div className="rounded-lg border border-coral/40 bg-coral/10 px-4 py-3 text-coral text-sm font-mono">
-            {error}
+    <div className="page select-page">
+      <div className="page-inner">
+        <header className="page-header">
+          <div>
+            <p className="eyebrow">ABTalks AI Cohort — Interview Session</p>
+            <h1>Select the candidate to interview</h1>
+            <p className="subheading">
+              Pick a real interview profile and let the AI interviewer build a tailored, adaptive technical conversation.
+            </p>
           </div>
-        )}
+          <div className="hero-panel">
+            <p className="hero-title">Interview candidates from the current cohort.</p>
+            <p className="hero-copy">Each profile includes completed missions, skips, retry signal, and curriculum alignment.</p>
+          </div>
+        </header>
+
+        {loading && <div className="status-message">Loading roster…</div>}
+        {error && <div className="toast toast--error">{error}</div>}
 
         {!loading && !error && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="candidate-grid">
             {candidates.map((c) => {
               const stats = computeStats(c);
               return (
-                <button
-                  key={c.member.id}
-                  onClick={() => onSelect(c)}
-                  className="text-left rounded-xl border border-border bg-surface hover:bg-surface2 hover:border-amber/50 transition-colors p-5 group"
-                >
-                  <div className="flex items-start justify-between mb-3">
+                <button key={c.member.id} className="candidate-card" onClick={() => onSelect(c)}>
+                  <div className="candidate-card__header">
                     <div>
-                      <div className="font-semibold text-ink text-base">
-                        {c.member.name}
-                      </div>
-                      <div className="text-muted text-sm">{c.member.jobRole}</div>
+                      <div className="candidate-name">{c.member.name}</div>
+                      <div className="candidate-role">{c.member.jobRole}</div>
                     </div>
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-muted bg-surface2 border border-border rounded px-2 py-1 group-hover:text-amber group-hover:border-amber/40 transition-colors">
-                      {c.member.id}
-                    </span>
+                    <span className="candidate-badge">{c.member.id}</span>
                   </div>
-                  <div className="font-mono text-[11px] text-teal border-t border-border pt-3 mt-1">
-                    {stats.completed}/{stats.total} completed · {stats.firstTry} first-try
+                  <div className="candidate-details">
+                    <div className="candidate-detail"><strong>{stats.completed}</strong> / {stats.total} completed</div>
+                    <div className="candidate-detail"><strong>{stats.firstTry}</strong> first-try</div>
+                    <div className="candidate-detail"><strong>{stats.commitDays}</strong> commit days</div>
                   </div>
                 </button>
               );

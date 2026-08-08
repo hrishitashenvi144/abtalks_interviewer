@@ -17,21 +17,15 @@ function Section({
   accent: "teal" | "coral" | "amber";
   icon: string;
 }) {
-  const accentClasses = {
-    teal: "text-teal border-teal/30 bg-teal/5",
-    coral: "text-coral border-coral/30 bg-coral/5",
-    amber: "text-amber border-amber/30 bg-amber/5",
-  }[accent];
-
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
-      <p className={`font-mono text-[11px] uppercase tracking-[0.15em] mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 ${accentClasses}`}>
+    <div className="feedback-card">
+      <p className={`pill pill--${accent}`}>
         {icon} {title}
       </p>
-      <ul className="space-y-2.5">
+      <ul className="feedback-list">
         {items.map((item, i) => (
-          <li key={i} className="flex gap-2.5 text-[15px] leading-relaxed text-ink/90">
-            <span className="text-muted mt-1.5 w-1 h-1 rounded-full bg-current shrink-0" />
+          <li key={i} className="feedback-list-item">
+            <span />
             <span>{item}</span>
           </li>
         ))}
@@ -40,35 +34,64 @@ function Section({
   );
 }
 
-export default function FeedbackReport({ candidate, feedback, onRestart }: Props) {
+function MetricCard({ title, value }: { title: string; value?: string }) {
+  if (!value) return null;
   return (
-    <div className="min-h-screen bg-bg text-ink px-5 py-10 sm:px-10">
-      <div className="mx-auto max-w-3xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber mb-3">
-          Interview Complete
-        </p>
-        <h1 className="text-3xl font-extrabold tracking-tight mb-1">
-          {candidate.member.name}'s Feedback Report
-        </h1>
-        <p className="text-muted mb-8">{candidate.member.jobRole}</p>
+    <div className="metric-card">
+      <p className="metric-title">{title}</p>
+      <p>{value}</p>
+    </div>
+  );
+}
 
-        <div className="rounded-xl border border-border bg-surface2 p-5 mb-6">
-          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted mb-2">
-            Summary
-          </p>
-          <p className="text-[16px] leading-relaxed text-ink/95">{feedback.summary}</p>
+export default function FeedbackReport({ candidate, feedback, onRestart }: Props) {
+  const score = feedback.overallScore ?? Math.max(40, Math.min(96, 56 + (feedback.strengths.length - feedback.gaps.length) * 8));
+  const rating = score >= 80 ? "Strong" : score >= 60 ? "Balanced" : "Needs Improvement";
+
+  return (
+    <div className="page feedback-page">
+      <div className="page-inner">
+        <div className="page-header page-header--narrow">
+          <div>
+            <p className="eyebrow">Interview Complete</p>
+            <h1>{candidate.member.name}</h1>
+            <p className="subheading">{candidate.member.jobRole}</p>
+          </div>
+          <div className="score-card score-card--large">
+            <span className="score-label">Overall signal</span>
+            <strong>{rating}</strong>
+            <span className="score-meta">Score {score}%</span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="summary-card">
+          <p className="section-label">Summary</p>
+          <p>{feedback.summary}</p>
+        </div>
+
+        <div className="feedback-metrics-grid">
+          <MetricCard title="Technical understanding" value={feedback.technicalUnderstanding} />
+          <MetricCard title="Reasoning" value={feedback.reasoning} />
+          <MetricCard title="Communication" value={feedback.communication} />
+          <MetricCard title="Depth" value={feedback.depth} />
+        </div>
+
+        <div className="grid grid--3cols">
           <Section title="Strengths" items={feedback.strengths} accent="teal" icon="✓" />
-          <Section title="Gaps" items={feedback.gaps} accent="coral" icon="!" />
-          <Section title="Next Steps" items={feedback.next} accent="amber" icon="→" />
+          <Section title="Weaknesses" items={feedback.gaps} accent="coral" icon="⚠" />
+          <Section title="Recommendations" items={feedback.next} accent="amber" icon="→" />
         </div>
 
-        <button
-          onClick={onRestart}
-          className="rounded-xl bg-surface border border-border hover:border-amber/50 hover:bg-surface2 transition-colors px-5 py-3 text-sm font-semibold"
-        >
+        {feedback.curriculumRevisit && feedback.curriculumRevisit.length > 0 && (
+          <Section
+            title="Curriculum areas to revisit"
+            items={feedback.curriculumRevisit}
+            accent="teal"
+            icon="📚"
+          />
+        )}
+
+        <button className="button button--secondary" onClick={onRestart}>
           Start New Interview
         </button>
       </div>
