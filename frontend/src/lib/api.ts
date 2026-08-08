@@ -8,7 +8,17 @@ export async function fetchCandidates(): Promise<Candidate[]> {
   if (!res.ok) {
     throw new Error(`Failed to load candidates (status ${res.status})`);
   }
-  return res.json();
+
+  const data = await res.json();
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && Array.isArray((data as any).candidates)) {
+    return (data as any).candidates;
+  }
+
+  throw new Error("Unexpected candidates response format from API.");
 }
 
 export async function startInterview(

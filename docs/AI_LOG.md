@@ -55,5 +55,7 @@ done — not aspirational or planned work.
 - Added layout and theme styles for app shell, dashboard metrics, interview UI,
   results panels, and history entries.
 - Verified the frontend compiles successfully with `npm run build`.
+- Fixed candidate loading to match the backend candidates API response shape.
+- Verified candidate selection and interview start flow against the backend.
 - Status: complete, ready for live demo verification.
  to main
