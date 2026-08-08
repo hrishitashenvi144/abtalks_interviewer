@@ -1,122 +1,85 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react";
+import type { Candidate, Feedback, Screen } from "./types";
+import CandidateSelect from "./components/CandidateSelect";
+import ChatInterview from "./components/ChatInterview";
+import FeedbackReport from "./components/FeedbackReport";
+import { startInterview } from "./lib/api";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [screen, setScreen] = useState<Screen>("select");
+  const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [sessionId, setSessionId] = useState<string>("");
+  const [initialMessage, setInitialMessage] = useState<string>("");
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+  async function handleSelectCandidate(c: Candidate) {
+    setStarting(true);
+    setStartError(null);
+    const newSessionId = crypto.randomUUID();
+    try {
+      const res = await startInterview(newSessionId, c);
+      setCandidate(c);
+      setSessionId(newSessionId);
+      setInitialMessage(res.reply);
+      setScreen("interview");
+    } catch (e: any) {
+      setStartError(e.message || "Could not start the interview. Check the backend is running.");
+    } finally {
+      setStarting(false);
+    }
+  }
 
-      <div className="ticks"></div>
+  function handleComplete(fb: Feedback) {
+    setFeedback(fb);
+    setScreen("feedback");
+  }
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+  function handleRestart() {
+    setCandidate(null);
+    setSessionId("");
+    setInitialMessage("");
+    setFeedback(null);
+    setScreen("select");
+  }
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  if (screen === "select") {
+    return (
+      <>
+        <CandidateSelect onSelect={handleSelectCandidate} />
+        {starting && (
+          <div className="fixed inset-0 bg-bg/80 flex items-center justify-center font-mono text-sm text-amber">
+            Starting interview session…
+          </div>
+        )}
+        {startError && (
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border border-coral/40 bg-surface px-4 py-3 text-coral text-sm font-mono max-w-md text-center">
+            {startError}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (screen === "interview" && candidate) {
+    return (
+      <ChatInterview
+        candidate={candidate}
+        sessionId={sessionId}
+        initialMessage={initialMessage}
+        onComplete={handleComplete}
+      />
+    );
+  }
+
+  if (screen === "feedback" && candidate && feedback) {
+    return (
+      <FeedbackReport candidate={candidate} feedback={feedback} onRestart={handleRestart} />
+    );
+  }
+
+  return null;
 }
 
-export default App
+export default App;

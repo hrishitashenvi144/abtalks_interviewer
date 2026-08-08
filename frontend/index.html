@@ -4,9 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>The Interview Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bg: "#14161B",
+              surface: "#1D2027",
+              surface2: "#262A33",
+              border: "#30343D",
+              ink: "#EDEEF0",
+              muted: "#9AA0AC",
+              amber: "#E8A33D",
+              teal: "#4FD1C5",
+              coral: "#F2745A",
+            },
+            fontFamily: {
+              mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+              sans: ["Inter", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
   </head>
-  <body>
+  <body class="bg-bg text-ink font-sans">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
