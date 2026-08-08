@@ -6,7 +6,7 @@ interface Props {
   candidate: Candidate;
   sessionId: string;
   initialTurn: InterviewTurnResponse;
-  onComplete: (feedback: Feedback) => void;
+  onComplete: (result: { feedback: Feedback; transcript: ChatMessage[] }) => void;
 }
 
 export default function ChatInterview({
@@ -36,14 +36,17 @@ export default function ChatInterview({
     const text = input.trim();
     if (!text || waiting) return;
 
-    setMessages((prev) => [...prev, { role: "candidate", content: text }]);
+    const candidateMessage: ChatMessage = { role: "candidate", content: text };
+    setMessages((prev) => [...prev, candidateMessage]);
     setInput("");
     setWaiting(true);
     setError(null);
 
     try {
       const res = await sendMessage(sessionId, text);
-      setMessages((prev) => [...prev, { role: "agent", content: res.reply }]);
+      const assistantMessage: ChatMessage = { role: "agent", content: res.reply };
+      const nextMessages = [...messages, candidateMessage, assistantMessage];
+      setMessages(nextMessages);
       setCurrentTopic((prev) => res.topicTitle ?? prev);
       setQuestionNumber(res.questionNumber ?? questionNumber + 1);
       setTopicPosition(res.topicPosition ?? topicPosition);
@@ -51,7 +54,7 @@ export default function ChatInterview({
       setIsFollowup(Boolean(res.isFollowup));
 
       if (res.done && res.feedback) {
-        onComplete(res.feedback);
+        onComplete({ feedback: res.feedback, transcript: nextMessages });
       }
     } catch (e: any) {
       setError(e.message || "Something went wrong reaching the interview agent.");
@@ -71,9 +74,11 @@ export default function ChatInterview({
     <div className="page interview-page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Live Interview</p>
+          <p className="eyebrow">Live interview</p>
           <h1>{candidate.member.name}</h1>
-          <p className="subheading">{candidate.member.jobRole}</p>
+          <p className="subheading">
+            {candidate.member.jobRole} • {candidate.member.yearsExperience} years experience
+          </p>
         </div>
         <div className="interview-metadata">
           <div className="meta-pill">

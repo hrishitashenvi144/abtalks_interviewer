@@ -57,4 +57,16 @@ export interface InterviewTurnResponse {
   topicTotal?: number;
 }
 
-export type Screen = "select" | "interview" | "feedback";
+export interface InterviewHistoryItem {
+  id: string;
+  sessionId: string;
+  createdAt: string;
+  finishedAt: string;
+  candidate: Candidate;
+  feedback: Feedback;
+  transcript: ChatMessage[];
+  score: number;
+  rating: string;
+}
+
+export type Screen = "dashboard" | "candidates" | "interview" | "results" | "history" | "settings";

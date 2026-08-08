@@ -3,6 +3,7 @@ import type { Candidate, Feedback } from "../types";
 interface Props {
   candidate: Candidate;
   feedback: Feedback;
+  transcript?: { role: "agent" | "candidate"; content: string }[];
   onRestart: () => void;
 }
 
@@ -44,7 +45,7 @@ function MetricCard({ title, value }: { title: string; value?: string }) {
   );
 }
 
-export default function FeedbackReport({ candidate, feedback, onRestart }: Props) {
+export default function FeedbackReport({ candidate, feedback, transcript, onRestart }: Props) {
   const score = feedback.overallScore ?? Math.max(40, Math.min(96, 56 + (feedback.strengths.length - feedback.gaps.length) * 8));
   const rating = score >= 80 ? "Strong" : score >= 60 ? "Balanced" : "Needs Improvement";
 
@@ -81,6 +82,20 @@ export default function FeedbackReport({ candidate, feedback, onRestart }: Props
           <Section title="Weaknesses" items={feedback.gaps} accent="coral" icon="⚠" />
           <Section title="Recommendations" items={feedback.next} accent="amber" icon="→" />
         </div>
+
+        {transcript && transcript.length > 0 && (
+          <div className="transcript-card">
+            <p className="section-label">Interview transcript</p>
+            <div className="transcript-list">
+              {transcript.map((message, index) => (
+                <div key={index} className={`transcript-line transcript-line--${message.role}`}>
+                  <span className="transcript-role">{message.role === "agent" ? "Interviewer" : "Candidate"}</span>
+                  <p>{message.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {feedback.curriculumRevisit && feedback.curriculumRevisit.length > 0 && (
           <Section
