@@ -14,7 +14,10 @@ CANDIDATES_FILE = DATA_DIR / "candidates.json"
 def _load_candidates() -> list[dict]:
     with open(CANDIDATES_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("candidates", [])
+    # Return the top-level "candidates" array from the JSON file. Use direct
+    # indexing so a missing key is obvious during development instead of
+    # silently returning an empty list.
+    return data["candidates"]
 
 
 @router.get("/api/candidates")
