@@ -1,7 +1,7 @@
 import type { Candidate, InterviewTurnResponse } from "../types";
 
 const API_BASE_URL: string =
-  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8000";
+  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8010";
 
 export async function fetchCandidates(): Promise<Candidate[]> {
   const res = await fetch(`${API_BASE_URL}/api/candidates`);
