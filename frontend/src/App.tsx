@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Candidate, Feedback, Screen } from "./types";
+import type { Candidate, Feedback, InterviewTurnResponse, Screen } from "./types";
 import CandidateSelect from "./components/CandidateSelect";
 import ChatInterview from "./components/ChatInterview";
 import FeedbackReport from "./components/FeedbackReport";
@@ -9,7 +9,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>("select");
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [sessionId, setSessionId] = useState<string>("");
-  const [initialMessage, setInitialMessage] = useState<string>("");
+  const [initialTurn, setInitialTurn] = useState<InterviewTurnResponse | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ function App() {
       const res = await startInterview(newSessionId, c);
       setCandidate(c);
       setSessionId(newSessionId);
-      setInitialMessage(res.reply);
+      setInitialTurn(res);
       setScreen("interview");
     } catch (e: any) {
       setStartError(e.message || "Could not start the interview. Check the backend is running.");
@@ -39,7 +39,7 @@ function App() {
   function handleRestart() {
     setCandidate(null);
     setSessionId("");
-    setInitialMessage("");
+    setInitialTurn(null);
     setFeedback(null);
     setScreen("select");
   }
@@ -48,26 +48,18 @@ function App() {
     return (
       <>
         <CandidateSelect onSelect={handleSelectCandidate} />
-        {starting && (
-          <div className="fixed inset-0 bg-bg/80 flex items-center justify-center font-mono text-sm text-amber">
-            Starting interview session…
-          </div>
-        )}
-        {startError && (
-          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border border-coral/40 bg-surface px-4 py-3 text-coral text-sm font-mono max-w-md text-center">
-            {startError}
-          </div>
-        )}
+        {starting && <div className="overlay">Starting interview session…</div>}
+        {startError && <div className="toast toast--error">{startError}</div>}
       </>
     );
   }
 
-  if (screen === "interview" && candidate) {
+  if (screen === "interview" && candidate && initialTurn) {
     return (
       <ChatInterview
         candidate={candidate}
         sessionId={sessionId}
-        initialMessage={initialMessage}
+        initialTurn={initialTurn}
         onComplete={handleComplete}
       />
     );

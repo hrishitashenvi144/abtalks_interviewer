@@ -1,23 +1,28 @@
 import { useEffect, useRef, useState } from "react";
-import type { ChatMessage, Candidate, Feedback } from "../types";
+import type { ChatMessage, Candidate, Feedback, InterviewTurnResponse } from "../types";
 import { sendMessage } from "../lib/api";
 
 interface Props {
   candidate: Candidate;
   sessionId: string;
-  initialMessage: string;
+  initialTurn: InterviewTurnResponse;
   onComplete: (feedback: Feedback) => void;
 }
 
 export default function ChatInterview({
   candidate,
   sessionId,
-  initialMessage,
+  initialTurn,
   onComplete,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "agent", content: initialMessage },
+    { role: "agent", content: initialTurn.reply },
   ]);
+  const [currentTopic, setCurrentTopic] = useState<string | null>(initialTurn.topicTitle ?? null);
+  const [questionNumber, setQuestionNumber] = useState<number>(initialTurn.questionNumber ?? 1);
+  const [topicPosition, setTopicPosition] = useState<number | null>(initialTurn.topicPosition ?? null);
+  const [topicTotal, setTopicTotal] = useState<number | null>(initialTurn.topicTotal ?? null);
+  const [isFollowup, setIsFollowup] = useState<boolean>(initialTurn.isFollowup ?? false);
   const [input, setInput] = useState("");
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +44,12 @@ export default function ChatInterview({
     try {
       const res = await sendMessage(sessionId, text);
       setMessages((prev) => [...prev, { role: "agent", content: res.reply }]);
+      setCurrentTopic((prev) => res.topicTitle ?? prev);
+      setQuestionNumber(res.questionNumber ?? questionNumber + 1);
+      setTopicPosition(res.topicPosition ?? topicPosition);
+      setTopicTotal(res.topicTotal ?? topicTotal);
+      setIsFollowup(Boolean(res.isFollowup));
+
       if (res.done && res.feedback) {
         onComplete(res.feedback);
       }
@@ -57,74 +68,60 @@ export default function ChatInterview({
   }
 
   return (
-    <div className="min-h-screen bg-bg text-ink flex flex-col">
-      <header className="border-b border-border px-5 py-4 sm:px-10">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-amber">
-          Live Interview
-        </p>
-        <h1 className="font-semibold text-lg">
-          {candidate.member.name} <span className="text-muted font-normal">· {candidate.member.jobRole}</span>
-        </h1>
+    <div className="page interview-page">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Live Interview</p>
+          <h1>{candidate.member.name}</h1>
+          <p className="subheading">{candidate.member.jobRole}</p>
+        </div>
+        <div className="interview-metadata">
+          <div className="meta-pill">
+            Question {questionNumber}
+            {topicPosition && topicTotal ? ` · Topic ${topicPosition}/${topicTotal}` : ""}
+          </div>
+          <div className="meta-pill">{currentTopic || "Preparing topic…"}</div>
+          {isFollowup && <div className="meta-pill meta-pill--accent">Follow-up</div>}
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-10">
-        <div className="mx-auto max-w-2xl flex flex-col gap-4">
+      <main className="chat-panel">
+        <div className="chat-thread">
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`msg-in flex ${m.role === "candidate" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap ${
-                  m.role === "candidate"
-                    ? "bg-amber text-bg rounded-br-sm"
-                    : "bg-surface border border-border text-ink rounded-bl-sm"
-                }`}
-              >
-                {m.content}
-              </div>
+            <div key={i} className={`chat-message ${m.role === "candidate" ? "chat-message--user" : "chat-message--agent"}`}>
+              <p>{m.content}</p>
             </div>
           ))}
 
           {waiting && (
-            <div className="flex justify-start msg-in">
-              <div className="bg-surface border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-muted typing-dot" style={{ animationDelay: "0s" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-muted typing-dot" style={{ animationDelay: "0.15s" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-muted typing-dot" style={{ animationDelay: "0.3s" }} />
+            <div className="chat-message chat-message--agent chat-message--typing">
+              <div className="typing-indicator">
+                <span />
+                <span />
+                <span />
               </div>
+              <span>Thinking…</span>
             </div>
           )}
 
-          {error && (
-            <div className="rounded-lg border border-coral/40 bg-coral/10 px-4 py-3 text-coral text-sm font-mono">
-              {error}
-            </div>
-          )}
+          {error && <div className="toast toast--error">{error}</div>}
           <div ref={bottomRef} />
         </div>
-      </div>
+      </main>
 
-      <div className="border-t border-border px-4 py-4 sm:px-10">
-        <div className="mx-auto max-w-2xl flex gap-2 items-end">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={waiting}
-            placeholder="Type your answer…"
-            rows={1}
-            className="flex-1 resize-none rounded-xl bg-surface border border-border focus:border-amber/60 outline-none px-4 py-3 text-[15px] text-ink placeholder:text-muted disabled:opacity-50"
-          />
-          <button
-            onClick={handleSend}
-            disabled={waiting || !input.trim()}
-            className="rounded-xl bg-amber text-bg font-semibold px-5 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 transition"
-          >
-            Send
-          </button>
-        </div>
-      </div>
+      <footer className="chat-input-bar">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={waiting}
+          placeholder="Type your answer…"
+          rows={1}
+        />
+        <button onClick={handleSend} disabled={waiting || !input.trim()}>
+          Send
+        </button>
+      </footer>
     </div>
   );
 }
