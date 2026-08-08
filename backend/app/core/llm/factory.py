@@ -1,11 +1,15 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from app.core.llm.base import LLMClient
 from app.core.llm.gemini_client import GeminiClient
 from app.core.llm.claude_client import ClaudeClient
 from app.core.llm.groq_client import GroqClient
 
-load_dotenv()
+# Explicitly load backend/.env relative to this module so the server works
+# whether it is launched from the backend directory or from the repository root.
+dotenv_path = Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
 
 def get_llm_client(provider: str | None = None) -> LLMClient:

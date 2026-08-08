@@ -58,4 +58,12 @@ done — not aspirational or planned work.
 - Fixed candidate loading to match the backend candidates API response shape.
 - Verified candidate selection and interview start flow against the backend.
 - Status: complete, ready for live demo verification.
+
+---
+
+## Session 6 — Milestone 6: Backend interview start reliability
+- Diagnosed backend interview 500 as a startup environment issue when `backend/.env` is not loaded from a non-backend working directory.
+- Updated `app/core/llm/factory.py` to load `backend/.env` explicitly based on the module location.
+- Verified `POST /api/interview` succeeds when the backend is launched from the repository root using `uvicorn backend.main:app --app-dir backend`.
+- Status: complete.
  to main
