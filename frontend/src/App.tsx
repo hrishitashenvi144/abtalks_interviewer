@@ -207,30 +207,62 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="brand" onClick={handleShowDashboard}>
-          <span className="brand-mark">AB</span>
-          <div>
-            <strong>ABTalks</strong>
-            <span>Interview Studio</span>
+      <aside className="app-sidebar">
+        <div className="sidebar-top" onClick={handleShowDashboard}>
+          <div className="brand">
+            <span className="brand-mark">AB</span>
+            <div>
+              <strong>ABTalks</strong>
+              <span>Interview Studio</span>
+            </div>
           </div>
         </div>
-        <nav className="app-nav">
+
+        <nav className="sidebar-nav">
           {navItems.map((item) => (
             <button
               key={item.id}
               className={`nav-link ${screen === item.id ? "nav-link--active" : ""}`}
               onClick={() => setScreen(item.id)}
+              aria-current={screen === item.id ? "page" : undefined}
             >
               {item.label}
             </button>
           ))}
         </nav>
-      </header>
-      <main className="app-content">
-        {startError && <div className="toast toast--error">{startError}</div>}
-        {renderContent()}
-      </main>
+
+        <div className="sidebar-footer">
+          <div className="profile">
+            <div className="avatar">H</div>
+            <div className="profile-meta">
+              <strong>Harishita</strong>
+              <span className="profile-role">Product</span>
+            </div>
+            <button className="button button--ghost">Upgrade</button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="app-main">
+        <header className="app-topbar">
+          <div className="topbar-left">
+            <div className="brand compact" onClick={handleShowDashboard}>
+              <span className="brand-mark">AB</span>
+              <div>
+                <strong>ABTalks</strong>
+              </div>
+            </div>
+          </div>
+          <div className="topbar-right">
+            {/* future: search / notifications */}
+          </div>
+        </header>
+
+        <main className="app-content">
+          {startError && <div className="toast toast--error">{startError}</div>}
+          {renderContent()}
+        </main>
+      </div>
     </div>
   );
 }

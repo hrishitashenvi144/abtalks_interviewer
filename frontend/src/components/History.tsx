@@ -25,8 +25,11 @@ export default function History({ history, onViewResult, onStartInterview }: Pro
 
         {history.length === 0 ? (
           <div className="empty-panel">
-            <p>No interview sessions are available yet.</p>
-            <p>Complete your first interview and it will appear here with score, summary, and feedback.</p>
+            <p className="loading-title">No interviews yet</p>
+            <p className="loading-copy">Your interview history will appear here after you complete sessions. Start a new interview to get started.</p>
+            <div style={{ marginTop: '1rem' }}>
+              <button className="button button--primary" onClick={onStartInterview}>Start your first interview</button>
+            </div>
           </div>
         ) : (
           <div className="history-grid">

@@ -27,17 +27,16 @@ export default function Dashboard({ history, onStartInterview, onOpenHistory }: 
   return (
     <div className="page dashboard-page">
       <div className="page-inner">
-        <header className="page-header">
+        <header className="page-header page-header--lead">
           <div>
-            <p className="eyebrow">ABTalks Interview Studio</p>
-            <h1>Build stronger technical interviews with AI-driven coaching.</h1>
-            <p className="subheading">
-              Use candidate signals and curriculum progress to run adaptive interviews, capture performance, and turn every session into actionable feedback.
-            </p>
+            <p className="eyebrow">Welcome back</p>
+            <h1>Welcome to ABTalks — Interview Studio</h1>
+            <p className="subheading">Run adaptive interviews, capture performance, and deliver actionable feedback with AI coaching.</p>
           </div>
-          <button className="button button--primary" onClick={onStartInterview}>
-            Start New Interview
-          </button>
+          <div className="header-actions">
+            <button className="button button--primary button--cta" onClick={onStartInterview}>Start New Interview</button>
+            <button className="button button--secondary" onClick={onOpenHistory}>Interview history</button>
+          </div>
         </header>
 
         <section className="dashboard-grid">

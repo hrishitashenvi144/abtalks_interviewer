@@ -44,7 +44,13 @@ export default function CandidateSelect({ onSelect }: Props) {
           </div>
         </header>
 
-        {loading && <div className="status-message">Loading roster…</div>}
+        {loading && (
+          <div className="empty-panel empty-loading">
+            <p className="loading-title">Loading candidates…</p>
+            <p className="loading-copy">Fetching the latest cohort roster. This may take a moment.</p>
+          </div>
+        )}
+
         {error && <div className="toast toast--error">{error}</div>}
 
         {!loading && !error && (
