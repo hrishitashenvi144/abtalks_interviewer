@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, JSONResponse
 
 router = APIRouter()
 
@@ -21,9 +21,11 @@ def _load_candidates() -> list[dict]:
 
 
 @router.get("/api/candidates")
-def list_candidates() -> list[dict]:
+def list_candidates() -> JSONResponse:
     """
     Demo helper endpoint (not part of the required spec) so the frontend can
     let a user pick which candidate profile to interview.
+
+    Return the raw candidates array directly as the JSON response body.
     """
-    return _load_candidates()
+    return JSONResponse(content=_load_candidates())
