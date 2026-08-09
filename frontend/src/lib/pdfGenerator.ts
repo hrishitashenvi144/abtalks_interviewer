@@ -104,7 +104,7 @@ export function generateFeedbackPDF(candidate: Candidate, feedback: Feedback): v
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.setTextColor(232, 237, 248);
+  doc.setTextColor(30,41,59);
   const summaryLines = doc.splitTextToSize(feedback.summary || "No summary provided.", contentWidth);
   doc.text(summaryLines, margin, y);
   y += summaryLines.length * 5 + 8;
@@ -126,9 +126,18 @@ export function generateFeedbackPDF(candidate: Candidate, feedback: Feedback): v
     y += 8;
 
     competencies.forEach((comp) => {
-      checkNewPage(18);
+      const valueX = margin + 65;
+      const valueWidth = contentWidth - 65 - 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const valueLines = doc.splitTextToSize(comp.val!, valueWidth);
+      const lineHeight = 5;
+      const boxHeight = Math.max(14, valueLines.length * lineHeight + 6);
+
+      checkNewPage(boxHeight + 4);
+
       doc.setFillColor(22, 30, 52);
-      doc.roundedRect(margin, y, contentWidth, 14, 2, 2, "F");
+      doc.roundedRect(margin, y, contentWidth, boxHeight, 2, 2, "F");
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -137,8 +146,8 @@ export function generateFeedbackPDF(candidate: Candidate, feedback: Feedback): v
 
       doc.setFont("helvetica", "normal");
       doc.setTextColor(232, 237, 248);
-      doc.text(comp.val!, margin + 65, y + 9);
-      y += 18;
+      doc.text(valueLines, valueX, y + 9);
+      y += boxHeight + 4;
     });
     y += 4;
   }
@@ -156,7 +165,7 @@ export function generateFeedbackPDF(candidate: Candidate, feedback: Feedback): v
     items.forEach((item) => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(232, 237, 248);
+      doc.setTextColor(30, 41, 59);
       const lines = doc.splitTextToSize(`•  ${item}`, contentWidth - 5);
       checkNewPage(lines.length * 5 + 3);
       doc.text(lines, margin + 2, y);

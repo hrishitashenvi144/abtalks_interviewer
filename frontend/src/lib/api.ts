@@ -1,7 +1,7 @@
 import type { Candidate, InterviewTurnResponse } from "../types";
 
 const API_BASE_URL: string =
-  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8010";
+  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8000";
 
 export async function fetchCandidates(): Promise<Candidate[]> {
   const res = await fetch(`${API_BASE_URL}/api/candidates`);
@@ -49,6 +49,31 @@ export async function sendMessage(
   if (!res.ok) {
     const detail = await safeErrorDetail(res);
     throw new Error(detail || `Failed to send message (status ${res.status})`);
+  }
+  return res.json();
+}
+export async function skipQuestion(sessionId: string): Promise<InterviewTurnResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/interview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, skip: true }),
+  });
+  if (!res.ok) {
+    const detail = await safeErrorDetail(res);
+    throw new Error(detail || `Failed to skip question (status ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function endInterviewNow(sessionId: string): Promise<InterviewTurnResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/interview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, endNow: true }),
+  });
+  if (!res.ok) {
+    const detail = await safeErrorDetail(res);
+    throw new Error(detail || `Failed to end interview (status ${res.status})`);
   }
   return res.json();
 }

@@ -758,6 +758,7 @@ h1 {
 .dashboard-grid {
   grid-template-columns: 1.75fr 1fr;
   margin-bottom: 1.5rem;
+  align-items: start;
 }
 
 .metrics-panel,
@@ -771,6 +772,7 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 1.25rem;
   background: rgba(255, 255, 255, 0.03);
+  padding: 1.5rem;
 }
 
 .dashboard-actions {
@@ -813,7 +815,7 @@ h1 {
 
 .insight-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 1rem;
   padding: 1.5rem;
 }
@@ -824,14 +826,23 @@ h1 {
   line-height: 1.75;
 }
 
+.insight-label {
+  margin: 0 0 0.5rem;
+  color: var(--text, #e8edf8);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .insight-chip {
-  align-self: center;
-  padding: 0.9rem 1rem;
-  border-radius: 999px;
+  align-self: start;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
   background: rgba(245, 165, 36, 0.14);
   color: var(--accent);
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.5;
 }
 
 .panel-card {

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, Candidate, Feedback, InterviewTurnResponse } from "../types";
-import { sendMessage } from "../lib/api";
-
+import { sendMessage, skipQuestion, endInterviewNow } from "../lib/api";
 interface Props {
   candidate: Candidate;
   sessionId: string;
@@ -70,6 +69,54 @@ export default function ChatInterview({
     }
   }
 
+  async function handleSkip() {
+    if (waiting) return;
+    setWaiting(true);
+    setError(null);
+
+    const skipNote: ChatMessage = { role: "candidate", content: "(Skipped this question)" };
+    setMessages((prev) => [...prev, skipNote]);
+
+    try {
+      const res = await skipQuestion(sessionId);
+      const assistantMessage: ChatMessage = { role: "agent", content: res.reply };
+      const nextMessages = [...messages, skipNote, assistantMessage];
+      setMessages(nextMessages);
+      setCurrentTopic((prev) => res.topicTitle ?? prev);
+      setQuestionNumber(res.questionNumber ?? questionNumber + 1);
+      setTopicPosition(res.topicPosition ?? topicPosition);
+      setTopicTotal(res.topicTotal ?? topicTotal);
+      setIsFollowup(Boolean(res.isFollowup));
+
+      if (res.done && res.feedback) {
+        onComplete({ feedback: res.feedback, transcript: nextMessages });
+      }
+    } catch (e: any) {
+      setError(e.message || "Could not skip this question.");
+    } finally {
+      setWaiting(false);
+    }
+  }
+
+  async function handleEndNow() {
+    if (waiting) return;
+    const confirmed = window.confirm("End the interview now and generate feedback based on what's been discussed so far?");
+    if (!confirmed) return;
+
+    setWaiting(true);
+    setError(null);
+
+    try {
+      const res = await endInterviewNow(sessionId);
+      if (res.done && res.feedback) {
+        onComplete({ feedback: res.feedback, transcript: messages });
+      }
+    } catch (e: any) {
+      setError(e.message || "Could not end the interview.");
+      setWaiting(false);
+    }
+  }
+
   return (
     <div className="page interview-page">
       <header className="page-header">
@@ -113,8 +160,7 @@ export default function ChatInterview({
           <div ref={bottomRef} />
         </div>
       </main>
-
-      <footer className="chat-input-bar">
+<footer className="chat-input-bar">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -126,7 +172,24 @@ export default function ChatInterview({
         <button onClick={handleSend} disabled={waiting || !input.trim()}>
           Send
         </button>
+        <button
+          className="button button--secondary"
+          onClick={handleSkip}
+          disabled={waiting}
+          title="Skip this question and move to the next topic"
+        >
+          Skip Question
+        </button>
+        <button
+          className="button button--secondary"
+          onClick={handleEndNow}
+          disabled={waiting}
+          title="End the interview now and see your results"
+        >
+          End Interview
+        </button>
       </footer>
+      
     </div>
   );
 }

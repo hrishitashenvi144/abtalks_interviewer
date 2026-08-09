@@ -47,7 +47,11 @@ function MetricCard({ title, value }: { title: string; value?: string }) {
 }
 
 export default function FeedbackReport({ candidate, feedback, transcript, onRestart }: Props) {
-  const score = feedback.overallScore ?? Math.max(40, Math.min(96, 56 + (feedback.strengths.length - feedback.gaps.length) * 8));
+  const strengths = feedback.strengths ?? [];
+  const gaps = feedback.gaps ?? [];
+  const next = feedback.next ?? [];
+  const curriculumRevisit = feedback.curriculumRevisit ?? [];
+  const score = feedback.overallScore ?? Math.max(40, Math.min(96, 56 + (strengths.length - gaps.length) * 8));
   const rating = score >= 80 ? "Strong" : score >= 60 ? "Balanced" : "Needs Improvement";
 
   const handleDownload = () => {
@@ -85,9 +89,9 @@ export default function FeedbackReport({ candidate, feedback, transcript, onRest
         </div>
 
         <div className="grid grid--3cols">
-          <Section title="Strengths" items={feedback.strengths} accent="teal" icon="✓" />
-          <Section title="Weaknesses" items={feedback.gaps} accent="coral" icon="⚠" />
-          <Section title="Recommendations" items={feedback.next} accent="amber" icon="→" />
+          <Section title="Strengths" items={strengths} accent="teal" icon="✓" />
+<Section title="Weaknesses" items={gaps} accent="coral" icon="⚠" />
+<Section title="Recommendations" items={next} accent="amber" icon="→" />
         </div>
 
         {transcript && transcript.length > 0 && (
@@ -104,10 +108,10 @@ export default function FeedbackReport({ candidate, feedback, transcript, onRest
           </div>
         )}
 
-        {feedback.curriculumRevisit && feedback.curriculumRevisit.length > 0 && (
+        {curriculumRevisit.length > 0 && (
           <Section
             title="Curriculum areas to revisit"
-            items={feedback.curriculumRevisit}
+            items={curriculumRevisit}
             accent="teal"
             icon="📚"
           />

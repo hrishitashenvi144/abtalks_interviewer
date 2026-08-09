@@ -77,7 +77,7 @@ def _parse_feedback_output(client, history: list, system_prompt: str, raw_respon
             )
 
 
-def process_turn(session_id: str, candidate: dict | None = None, message: str | None = None) -> InterviewTurnResult:
+def process_turn(session_id: str, candidate: dict | None = None, message: str | None = None, skip: bool = False, end_now: bool = False) -> InterviewTurnResult:
     """
     Main orchestration entry point for processing a candidate's interview turn.
     """
@@ -122,6 +122,30 @@ def process_turn(session_id: str, candidate: dict | None = None, message: str | 
         return InterviewTurnResult(reply="Interview completed.", done=True)
 
     # 2. SUBSEQUENT TURNS
+    # 2. SUBSEQUENT TURNS
+
+    # Handle "End Interview Now" — force early conclusion regardless of minimums
+    if end_now:
+        session["conversation_history"].append({"role": "user", "content": "[Candidate chose to end the interview early.]"})
+        fb_prompt = build_feedback_prompt(session)
+        raw_fb_resp = client.generate(messages=session["conversation_history"], system_prompt=fb_prompt)
+        feedback = _parse_feedback_output(client, session["conversation_history"], fb_prompt, raw_fb_resp)
+        session["phase"] = "done"
+        update_session(session_id, session)
+        return InterviewTurnResult(reply="Interview ended early by request.", done=True, feedback=feedback)
+
+    # Handle "Skip Question" — force advance to next topic without LLM evaluation
+    if skip:
+        topic_queue = session.get("topic_queue", [])
+        topic_idx = session.get("topic_index", 0)
+        skipped_day = topic_queue[topic_idx]["day"] if topic_idx < len(topic_queue) else 31
+        session["conversation_history"].append({"role": "user", "content": "[Candidate chose to skip this question.]"})
+        session["topic_index"] = topic_idx + 1
+        session["days_covered"].add(skipped_day)
+        session["questions_asked"] = session.get("questions_asked", 0) + 1
+        session["followups_on_current"] = 0
+        message = None  # don't double-append below
+
     if message:
         session["conversation_history"].append({"role": "user", "content": message})
 

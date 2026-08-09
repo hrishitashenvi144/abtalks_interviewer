@@ -12,6 +12,8 @@ class InterviewRequest(BaseModel):
     sessionId: str
     candidate: dict | None = None
     message: str | None = None
+    skip: bool | None = None
+    endNow: bool | None = None
 
 
 @router.post("/api/interview", response_model=InterviewTurnResult, response_model_exclude_none=True)
@@ -25,7 +27,7 @@ def interview_turn(payload: InterviewRequest) -> InterviewTurnResult:
     if payload.candidate is not None:
         return process_turn(payload.sessionId, candidate=payload.candidate, message=None)
 
-    if payload.message is not None:
+    if payload.message is not None or payload.skip or payload.endNow:
         existing = get_session(payload.sessionId)
         if existing is None:
             raise HTTPException(
@@ -33,7 +35,13 @@ def interview_turn(payload: InterviewRequest) -> InterviewTurnResult:
                 detail=f"No active interview session found for sessionId '{payload.sessionId}'. "
                        f"Start a new interview by sending 'candidate' in the request body.",
             )
-        return process_turn(payload.sessionId, candidate=None, message=payload.message)
+        return process_turn(
+            payload.sessionId,
+            candidate=None,
+            message=payload.message,
+            skip=bool(payload.skip),
+            end_now=bool(payload.endNow),
+        )
 
     raise HTTPException(
         status_code=400,
