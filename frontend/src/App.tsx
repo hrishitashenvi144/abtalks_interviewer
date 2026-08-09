@@ -47,6 +47,8 @@ export default function App() {
   const [startError, setStartError] = useState<string | null>(null);
   const [interviewStartAt, setInterviewStartAt] = useState<string | null>(null);
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     setHistory(loadInterviewHistory());
   }, []);
@@ -149,10 +151,10 @@ export default function App() {
                   <p className="subheading">{selectedResult.candidate.member.jobRole}</p>
                 </div>
                 <div className="conclusion-panel">
-                  <p className="section-label">Final score</p>
                   <div className="score-card score-card--large">
+                    <span className="score-label">Overall signal</span>
                     <strong>{selectedResult.rating}</strong>
-                    <span className="score-meta">{selectedResult.score}%</span>
+                    <span className="score-meta">Score {selectedResult.score}%</span>
                   </div>
                 </div>
               </header>
@@ -207,8 +209,8 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <aside className="app-sidebar">
-        <div className="sidebar-top" onClick={handleShowDashboard}>
+      <header className="app-topbar">
+        <div className="topbar-left" onClick={handleShowDashboard}>
           <div className="brand">
             <span className="brand-mark">AB</span>
             <div>
@@ -218,12 +220,15 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className={`topbar-nav ${mobileMenuOpen ? "topbar-nav--open" : ""}`}>
           {navItems.map((item) => (
             <button
               key={item.id}
               className={`nav-link ${screen === item.id ? "nav-link--active" : ""}`}
-              onClick={() => setScreen(item.id)}
+              onClick={() => {
+                setScreen(item.id);
+                setMobileMenuOpen(false);
+              }}
               aria-current={screen === item.id ? "page" : undefined}
             >
               {item.label}
@@ -231,38 +236,35 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
+        <div className="topbar-right">
           <div className="profile">
             <div className="avatar">H</div>
             <div className="profile-meta">
               <strong>Hrishita</strong>
               <span className="profile-role">Product</span>
             </div>
-            <button className="button button--ghost">Upgrade</button>
           </div>
+
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {mobileMenuOpen ? (
+                <path d="M18 6L6 18M6 6l12 12" />
+              ) : (
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
-      </aside>
+      </header>
 
-      <div className="app-main">
-        <header className="app-topbar">
-          <div className="topbar-left">
-            <div className="brand compact" onClick={handleShowDashboard}>
-              <span className="brand-mark">AB</span>
-              <div>
-                <strong>ABTalks</strong>
-              </div>
-            </div>
-          </div>
-          <div className="topbar-right">
-            {/* future: search / notifications */}
-          </div>
-        </header>
-
-        <main className="app-content">
-          {startError && <div className="toast toast--error">{startError}</div>}
-          {renderContent()}
-        </main>
-      </div>
+      <main className="app-content">
+        {startError && <div className="toast toast--error">{startError}</div>}
+        {renderContent()}
+      </main>
     </div>
   );
 }
