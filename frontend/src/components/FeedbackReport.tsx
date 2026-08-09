@@ -1,4 +1,5 @@
 import type { Candidate, Feedback } from "../types";
+import { generateFeedbackPDF } from "../lib/pdfGenerator";
 
 interface Props {
   candidate: Candidate;
@@ -49,6 +50,10 @@ export default function FeedbackReport({ candidate, feedback, transcript, onRest
   const score = feedback.overallScore ?? Math.max(40, Math.min(96, 56 + (feedback.strengths.length - feedback.gaps.length) * 8));
   const rating = score >= 80 ? "Strong" : score >= 60 ? "Balanced" : "Needs Improvement";
 
+  const handleDownload = () => {
+    generateFeedbackPDF(candidate, feedback);
+  };
+
   return (
     <div className="page feedback-page">
       <div className="page-inner">
@@ -58,10 +63,12 @@ export default function FeedbackReport({ candidate, feedback, transcript, onRest
             <h1>{candidate.member.name}</h1>
             <p className="subheading">{candidate.member.jobRole}</p>
           </div>
-          <div className="score-card score-card--large">
-            <span className="score-label">Overall signal</span>
-            <strong>{rating}</strong>
-            <span className="score-meta">Score {score}%</span>
+          <div className="conclusion-panel">
+            <div className="score-card score-card--large">
+              <span className="score-label">Overall signal</span>
+              <strong>{rating}</strong>
+              <span className="score-meta">Score {score}%</span>
+            </div>
           </div>
         </div>
 
@@ -106,10 +113,31 @@ export default function FeedbackReport({ candidate, feedback, transcript, onRest
           />
         )}
 
-        <button className="button button--secondary" onClick={onRestart}>
-          Start New Interview
-        </button>
+        <div style={{ display: "flex", gap: "1rem", marginTop: "2rem", flexWrap: "wrap" }}>
+          <button className="button button--primary" onClick={handleDownload}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ marginRight: "0.5rem" }}
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download Report
+          </button>
+          <button className="button button--secondary" onClick={onRestart}>
+            Start New Interview
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+
