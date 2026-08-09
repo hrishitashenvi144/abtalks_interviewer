@@ -842,9 +842,9 @@ h1 {
 .summary-card,
 .feedback-card,
 .transcript-card {
-  border: 1px solid var(--border);
+  border: 1px solid #2A2A2E;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: #141416;
   padding: 1.5rem;
 }
 
@@ -871,16 +871,20 @@ h1 {
 }
 
 .stat-card {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid #2A2A2E;
   border-radius: 1.15rem;
   padding: 1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: #1C1C1F;
+}
+
+.stat-card strong {
+  color: #F5F5F5;
 }
 
 .stat-label {
   display: block;
   margin-bottom: 0.65rem;
-  color: var(--muted);
+  color: #8A8A8E;
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -891,17 +895,20 @@ h1 {
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 1rem;
   padding: 1.5rem;
+  background: #1C1C1F;
+  border: 1px solid #2A2A2E;
+  border-radius: 1.25rem;
 }
 
 .insight-content p {
   margin: 0 0 0.75rem;
-  color: var(--muted);
+  color: #8A8A8E;
   line-height: 1.75;
 }
 
 .insight-label {
   margin: 0 0 0.5rem;
-  color: var(--text, #e8edf8);
+  color: #F5F5F5;
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.4;
@@ -909,11 +916,12 @@ h1 {
 
 .insight-chip {
   align-self: start;
-  padding: 1rem 1.25rem;
-  border-radius: 16px;
-  background: rgba(245, 165, 36, 0.14);
-  color: var(--accent);
-  font-weight: 700;
+  padding: 0.85rem 1.15rem;
+  border-radius: 12px;
+  background: #222226;
+  border: 1px solid #2A2A2E;
+  color: #F5F5F5;
+  font-weight: 600;
   white-space: normal;
   line-height: 1.5;
 }
@@ -1128,8 +1136,8 @@ h1 {
 .step-card {
   padding: 1.5rem;
   border-radius: 1.25rem;
-  border: 1px solid var(--border);
-  background: var(--surface2);
+  border: 1px solid #2A2A2E;
+  background: #141416;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -1137,7 +1145,7 @@ h1 {
 }
 
 .step-card:hover {
-  border-color: rgba(245, 165, 36, 0.35);
+  border-color: #8A8A8E;
   transform: translateY(-2px);
 }
 
@@ -1145,27 +1153,27 @@ h1 {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid rgba(245, 165, 36, 0.3);
+  background: linear-gradient(135deg, #E8E8EA 0%, #FFFFFF 25%, #B8B8BC 50%, #FFFFFF 75%, #D0D0D4 100%);
+  color: #0A0A0B;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1rem;
 }
 
 .step-label {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text);
+  color: #F5F5F5;
   margin: 0;
   line-height: 1.4;
 }
 
 .step-desc {
   font-size: 0.9rem;
-  color: var(--muted);
+  color: #8A8A8E;
   margin: 0;
   line-height: 1.5;
 }
