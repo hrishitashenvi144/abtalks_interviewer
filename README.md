@@ -1,6 +1,7 @@
 # The Interview Agent
 
 **Live demo:** [abtalks-interviewer.vercel.app](https://abtalks-interviewer.vercel.app)
+**Demo video:** https://drive.google.com/file/d/1q7_AgAPrFH0uIOTXdK0KFx3mGbKWJjbQ/view?usp=sharing
 
 An AI interviewer that conducts realistic, adaptive technical interviews
 based on a candidate's actual progress through the ABTalks 31-day AI
