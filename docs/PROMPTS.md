@@ -473,7 +473,7 @@ architecture.
 CRITICAL: never print, expose, copy, or include any actual API key
 values in output, logs, commits, or documentation.
 
-[Instructed to: check `git ls-files backend/.env` and .gitignore without
+[Instructed to check `git ls-files backend/.env` and .gitignore without
 printing .env contents. If backend/.env is tracked: `git rm --cached`
 it, ensure .gitignore covers it, create/update .env.example with
 placeholder values only, no history rewrite/force-push, no commit yet.
@@ -575,3 +575,110 @@ start an interview, no unrelated file changes, update AI_LOG.md,
 Conventional Commit: "fix: resolve interview start backend error". Don't
 push. No UI redesign, no Vite/WebSocket/Tailwind work, no unrelated
 diagnostics.]
+
+---
+
+## Session 8 — Manual Bug Fixes: PDF Report & Dashboard Layout
+**Context:** No coding agent available this session (Antigravity/Cline
+both unreliable). Fixes applied as direct manual code edits, guided
+step-by-step with exact find/replace blocks.
+
+1. **PDF feedback report — Competency Breakdown text truncation.**
+   `frontend/src/lib/pdfExport.ts`: competency values were rendered with
+   a single `doc.text()` call and a hardcoded box height, so long values
+   overflowed the box and got cut off mid-sentence. Fixed by wrapping
+   values with `doc.splitTextToSize()` and computing box height
+   dynamically from the resulting line count, so `checkNewPage()` also
+   receives the correct height and avoids splitting a box across a page
+   break.
+
+2. **PDF feedback report — Executive Summary and list sections rendering
+   invisible.** Same file: `doc.setTextColor(232, 237, 248)` (a
+   near-white color intended for text on dark card backgrounds) was
+   being applied to the Executive Summary paragraph and to
+   `renderListSection` bullet items (Strengths/Gaps/Recommendations/
+   Curriculum), both of which render directly on the plain white page.
+   Changed those two call sites to `doc.setTextColor(30, 41, 59)`.
+
+3. **Dashboard "Quick Improvement Insights" card — broken grid layout.**
+   CSS: the intended layout rule was written as `insight-card { ... }`
+   (missing the leading `.`), so it never matched
+   `className="insight-card"` and no grid was applied. Separately,
+   `.insight-chip` had `white-space: nowrap` while receiving full-
+   sentence recommendation text, causing its `auto`-sized grid column to
+   expand to fit the whole unwrapped sentence and squeeze the sibling
+   content column into single-word-per-line wrapping. Fixed the selector,
+   changed `grid-template-columns` to `minmax(0, 2fr) minmax(0, 1fr)`,
+   added `min-width: 0` to `.insight-content`, set `.insight-chip`
+   to `white-space: normal` with `border-radius: 16px` (was `999px`,
+   which only worked for single-line pill content) and added a dedicated
+   `.insight-label` rule so the heading line is visually distinct from
+   the body paragraph.
+
+4. **Dashboard cards — missing padding.** The shared rule for
+   `.metrics-panel`, `.insight-panel`, `.hero-panel`, etc. defined
+   border/radius/background but no `padding`, so text sat flush against
+   card edges on panels without their own child padding. Added
+   `padding: 1.5rem` to the shared rule.
+
+5. **Dashboard — stretched empty space above insights section.**
+   `.dashboard-grid` had no `align-items` set, defaulting to `stretch`,
+   forcing the shorter hero panel to match the height of the taller
+   metrics panel. Added `align-items: start`.
+
+6. **Deploy failure — `ERR_PNPM_OUTDATED_LOCKFILE`.** `pnpm-lock.yaml`
+   was out of sync with `package.json`, causing Vercel's
+   `pnpm install --frozen-lockfile` to fail the build. Fixed by running
+   `pnpm install` locally to regenerate the lockfile and committing it.
+
+---
+
+## Session 9 — Light Theme Conversion
+**Agent:** Google Antigravity
+
+Convert the app's color theme from dark to light. Scope is CSS-only —
+do not touch component structure, JSX, layout, or add any new
+dependencies, tests, CI, or Docker config.
+
+1. Locate the :root CSS variables (--bg, --text, --muted, --accent,
+--border, or similarly named) and update their values to a light theme:
+   - Background: white or near-white (e.g. #ffffff or #f8f9fb)
+   - Primary text: dark (e.g. #101524 or similar to current --bg dark
+     navy, inverted)
+   - Muted/secondary text: a mid-gray with sufficient contrast on white
+     (do not reuse the current muted slate-blue value as-is if it fails
+     contrast on white — check it)
+   - Accent: keep the existing orange (#F5A524) unless it fails contrast
+     on white, in which case darken it slightly for accessibility
+   - Border: a light gray, not the current dark-theme border color
+
+2. Search the entire frontend/src directory for HARDCODED color values
+that bypass the CSS variables — specifically:
+   - Any `rgba(255, 255, 255, ...)` used as a background tint (these
+     assume a dark base and will be invisible or wrong on light
+     backgrounds)
+   - Any hardcoded hex/rgb color NOT using a var(--...) reference,
+     especially near-white text colors like rgb(232, 237, 248) or
+     similar
+   - Also check frontend/src/lib/pdfExport.ts (or wherever the PDF
+     generator lives) — it has hardcoded RGB values for a dark-themed
+     PDF layout. Leave the PDF file completely alone; it is
+     intentionally dark-themed and independent of the app's on-screen
+     theme. Do not modify it.
+
+3. Replace hardcoded on-screen CSS color values with the appropriate CSS
+variable reference so they respond to the theme change. Do not introduce
+a theme-toggle or dark/light switcher — this is a one-way conversion to
+light theme only, no toggle logic.
+
+4. After changes, verify: no text is invisible or same-color-as-
+background anywhere (this app has had 3 separate contrast bugs today
+from hardcoded colors — check every card/panel component: Dashboard
+stat cards, insight panel, feedback report, chat interview bubbles,
+history list).
+
+Do not modify: component logic, API calls, routing, the PDF generator
+file, package.json, or any file outside frontend/src/**/*.css and
+frontend/src/**/*.tsx (only touch .tsx files if a color is hardcoded
+inline via style={} or className with inline color, not for structural
+changes).
