@@ -27,17 +27,53 @@ export default function Dashboard({ history, onStartInterview, onOpenHistory }: 
   return (
     <div className="page dashboard-page">
       <div className="page-inner">
+        {/* 1. Hero Blurb */}
         <header className="page-header page-header--lead">
           <div>
-            <p className="eyebrow">Welcome back</p>
-            <h1>Welcome to ABTalks — Interview Studio</h1>
-            <p className="subheading">Run adaptive interviews, capture performance, and deliver actionable feedback with AI coaching.</p>
+            <p className="eyebrow">ABTalks AI Interview Studio</p>
+            <h1>ABTalks</h1>
+            <p className="subheading">
+              Personalized AI technical interviews based on real cohort progress data.
+            </p>
           </div>
           <div className="header-actions">
-            <button className="button button--primary button--cta" onClick={onStartInterview}>Start New Interview</button>
-            <button className="button button--secondary" onClick={onOpenHistory}>Interview history</button>
+            <button className="button button--primary button--cta" onClick={onStartInterview}>
+              Start Interview
+            </button>
+            <button className="button button--secondary" onClick={onOpenHistory}>
+              Interview history
+            </button>
           </div>
         </header>
+
+        {/* 2. How It Works Section */}
+        <section className="how-it-works-section">
+          <p className="eyebrow">Platform Overview</p>
+          <h2 style={{ margin: "0.25rem 0 0.5rem", fontSize: "1.5rem" }}>How It Works</h2>
+          <div className="how-it-works-grid">
+            <div className="step-card">
+              <div className="step-number">1</div>
+              <h3 className="step-label">Select a candidate profile</h3>
+              <p className="step-desc">
+                Choose a cohort member profile to tailor questions to their learning journey.
+              </p>
+            </div>
+            <div className="step-card">
+              <div className="step-number">2</div>
+              <h3 className="step-label">Answer an adaptive AI interview tailored to their progress</h3>
+              <p className="step-desc">
+                Engage in dynamic, real-time technical questions shaped by cohort progress data.
+              </p>
+            </div>
+            <div className="step-card">
+              <div className="step-number">3</div>
+              <h3 className="step-label">Get a structured, evidence-based feedback report</h3>
+              <p className="step-desc">
+                Receive instant competency evaluations, strengths, gaps, and recommendations.
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section className="dashboard-grid">
           <div className="hero-panel hero-panel--large">
@@ -91,7 +127,23 @@ export default function Dashboard({ history, onStartInterview, onOpenHistory }: 
             </div>
           )}
         </section>
+
+        {/* 3. Small Footer Line */}
+        <footer className="landing-footer">
+          <p>
+            Built for the <strong>ABTalks AI Cohort Hackathon</strong> &bull;{" "}
+            <a
+              href="https://www.abtalks.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              https://www.abtalks.in
+            </a>
+          </p>
+        </footer>
       </div>
     </div>
   );
 }
+
